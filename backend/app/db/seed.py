@@ -95,6 +95,9 @@ STAGES = ["商机", "方案", "投标", "商务", "签约", "交付"]
 STAGE_WEIGHTS = [0.20, 0.20, 0.18, 0.15, 0.15, 0.12]
 RISK_LEVELS = ["低", "中", "高"]
 
+# 系统性欠达成的单元（让「低完成率」类问题有真实答案）
+WEAK_UNITS = {"新疆代表处", "山西办事处", "内蒙古办事处", "辽宁办事处", "云南代表处"}
+
 
 # --------------------------------------------------------------------------
 # 工具
@@ -222,8 +225,13 @@ def seed_revenue(conn: sqlite3.Connection, rng: random.Random) -> dict[str, int]
     }
 
     rows: list[tuple[str, int, int, int, int, int, int, int]] = []
+    unit_names = dict(conn.execute("SELECT unit_id, unit_name FROM dim_unit").fetchall())
     for year, unit_id, line_id, target in targets:
-        rate = rng.uniform(0.62, 1.14)            # 年度完成率
+        # 一部分单元系统性欠达成，保证「低完成率」类问题有意义
+        if unit_names.get(unit_id) in WEAK_UNITS:
+            rate = rng.uniform(0.50, 0.72)
+        else:
+            rate = rng.uniform(0.78, 1.14)
         annual = max(round(target * rate), 1)
         months = months_of(year, 9 if year == 2026 else 12)
         weights = [SEASON[m - 1] * rng.uniform(0.9, 1.1) for m in months]
