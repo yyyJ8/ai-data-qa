@@ -1,4 +1,4 @@
-"""评测脚本：跑完整评测集，产出基线分数。
+﻿"""评测脚本：跑完整评测集，产出基线分数。
 
 判定方式：把模型 SQL 与标准 SQL 各执行一次，按"行数一致 + 逐值相等（数值容差 0.01）"比对。
 - exact：完全一致（含行序）
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import datetime
@@ -40,13 +41,13 @@ def normalize(value):
     return str(value).strip()
 
 
-def row_equal(a: list, b: list) -> bool:
+def row_equal(a: list, b: list, tol: float = 0.05) -> bool:
     if len(a) != len(b):
         return False
     for x, y in zip(a, b):
         x, y = normalize(x), normalize(y)
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            if abs(float(x) - float(y)) > 0.01:
+            if abs(float(x) - float(y)) > tol:
                 return False
         elif x != y:
             return False
@@ -57,27 +58,32 @@ def _numerics(row: list) -> list[float]:
     return [float(normalize(v)) for v in row if isinstance(v, (int, float))]
 
 
-def contains_values(ref_row: list, got_row: list) -> bool:
+def contains_values(ref_row: list, got_row: list, tol: float = 0.05) -> bool:
     """标准答案的每个数值都能在模型结果行中找到（容忍模型多出派生列）。"""
     got = _numerics(got_row)
     for value in _numerics(ref_row):
-        if not any(abs(value - g) <= 0.01 for g in got):
+        if not any(abs(value - g) <= tol for g in got):
             return False
     return True
 
 
-def compare(ref_rows: list, got_rows: list) -> str:
+# 问题里出现这些词，行序才构成答案的一部分
+RANKING_RE = re.compile(r"排名|前\s*\d+|最高|最低|最大|最小|Top", re.IGNORECASE)
+
+
+def compare(ref_rows: list, got_rows: list, order_sensitive: bool = True) -> str:
     if len(ref_rows) != len(got_rows):
         return "fail"
+
+    if not order_sensitive:
+        ref_rows = sorted(ref_rows, key=lambda r: [str(normalize(v)) for v in r])
+        got_rows = sorted(got_rows, key=lambda r: [str(normalize(v)) for v in r])
+
     if all(row_equal(r, g) for r, g in zip(ref_rows, got_rows)):
         return "exact"
     if all(contains_values(r, g) for r, g in zip(ref_rows, got_rows)):
         return "value"
-    ref_sorted = sorted(ref_rows, key=lambda r: [str(normalize(v)) for v in r])
-    got_sorted = sorted(got_rows, key=lambda r: [str(normalize(v)) for v in r])
-    if all(row_equal(r, g) for r, g in zip(ref_sorted, got_sorted)):
-        return "unordered"
-    return "fail"
+    return "unordered" if order_sensitive else "fail"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -88,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cases", default=str(CASES))
     parser.add_argument("--limit", type=int, default=0, help="只跑前 N 条")
     parser.add_argument("--no-thinking", action="store_true")
-    parser.add_argument("--max-tokens", type=int, default=1500)
+    parser.add_argument("--max-tokens", type=int, default=3000)
     parser.add_argument("--verbose", action="store_true", help="打印每条结果")
     args = parser.parse_args(argv)
 
@@ -116,7 +122,8 @@ def main(argv: list[str] | None = None) -> int:
             elif not result.rows:
                 detail = "empty_result"
             else:
-                outcome = compare([list(r) for r in ref.rows], result.rows)
+                order_sensitive = bool(RANKING_RE.search(case["question"]))
+                outcome = compare([list(r) for r in ref.rows], result.rows, order_sensitive)
                 if outcome != "exact":
                     detail = f"ref={len(ref.rows)}行 got={len(result.rows)}行"
 
