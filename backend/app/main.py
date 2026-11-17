@@ -1,6 +1,6 @@
 """FastAPI 应用入口。
 
-当前只提供健康检查；问答、会话、配置等接口在 M3 逐步接入。
+已接入：健康检查、问数（SSE）、会话管理。配置/数据/反馈接口随后接入。
 """
 
 from __future__ import annotations
@@ -11,7 +11,9 @@ from contextlib import asynccontextmanager, closing
 
 from fastapi import FastAPI
 
+from .api import chat, sessions
 from .core.settings import SCHEMA_FILE, Settings, get_settings
+from .db.app_store import AppStore
 
 
 def configure_logging(settings: Settings) -> None:
@@ -23,16 +25,21 @@ def configure_logging(settings: Settings) -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    configure_logging(get_settings())
+    settings = get_settings()
+    configure_logging(settings)
+    AppStore(settings.app_db_file).init()
     yield
 
 
 app = FastAPI(
     title="AI问数",
     description="企业级销售经管数据问答平台（text2sql）",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
+
+app.include_router(chat.router)
+app.include_router(sessions.router)
 
 
 def _warehouse_status(settings: Settings) -> dict:
