@@ -1,4 +1,4 @@
-"""命令行问数：跑通"问题 → SQL → 结果"的最小闭环。
+﻿"""命令行问数：跑通"问题 → SQL → 结果"的最小闭环。
 
 用法（backend/ 下）：
     .venv\\Scripts\\python.exe scripts/ask.py "2026年各经营单元收入排名前十"
@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="问数命令行")
     parser.add_argument("question")
     parser.add_argument("--no-thinking", action="store_true")
-    parser.add_argument("--max-tokens", type=int, default=1500)
+    parser.add_argument("--max-tokens", type=int, default=3000)
     args = parser.parse_args(argv)
 
     result = answer(args.question, max_tokens=args.max_tokens)

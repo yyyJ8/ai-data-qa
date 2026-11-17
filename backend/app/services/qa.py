@@ -1,4 +1,4 @@
-"""问数主链路：召回表 → 构造 Prompt → 生成 SQL → 校验 → 执行 → 整形。
+﻿"""问数主链路：召回表 → 构造 Prompt → 生成 SQL → 校验 → 执行 → 整形。
 
 对外只暴露 answer()，返回结构化结果，方便接口层与评测脚本复用。
 """
@@ -41,7 +41,7 @@ def answer(
     *,
     settings: Settings | None = None,
     client: LLMClient | None = None,
-    max_tokens: int = 1500,
+    max_tokens: int = 3000,
     max_attempts: int = 2,
 ) -> QAResult:
     settings = settings or get_settings()

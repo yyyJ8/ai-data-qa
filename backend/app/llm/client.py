@@ -1,4 +1,4 @@
-"""LLM 客户端封装：统一超时、思考开关与 JSON 解析。
+﻿"""LLM 客户端封装：统一超时、思考开关与 JSON 解析。
 
 注意 deepseek-flash 的两个特性（M0 实测）：
 1. 默认开启思考，reasoning token 计入 max_tokens —— 预算不足会返回空 content；
@@ -65,7 +65,7 @@ class LLMClient:
     def complete(
         self,
         messages: list[dict],
-        max_tokens: int = 1500,
+        max_tokens: int = 3000,
         thinking: bool | None = None,
         temperature: float = 0.0,
     ) -> LLMResponse:
@@ -114,7 +114,7 @@ class LLMClient:
     def complete_json(
         self,
         messages: list[dict],
-        max_tokens: int = 1500,
+        max_tokens: int = 3000,
         thinking: bool | None = None,
     ) -> tuple[dict, LLMResponse]:
         response = self.complete(messages, max_tokens=max_tokens, thinking=thinking)
