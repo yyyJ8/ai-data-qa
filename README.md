@@ -85,7 +85,7 @@ npx serve Data
 | 数据字典 / 口径 | ✅ | [docs/数据字典草稿.md](docs/数据字典草稿.md) |
 | 后端 API | ⬜ | FastAPI + SQLite |
 | 前端应用 | ⬜ | React + TypeScript + Vite |
-| 评测集（问句-标准 SQL-结果） | ⬜ | `samples/` |
+| 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
 | 自动化测试 | ⬜ | 接口 + 端到端 |
 | Linux 部署 | ⬜ | Docker Compose，单端口对外 |
 
