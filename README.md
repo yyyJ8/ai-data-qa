@@ -83,7 +83,7 @@ npx serve Data
 | 原型功能分析 | ✅ | [docs/功能分析.md](docs/功能分析.md) |
 | 原型问题诊断 | ✅ | [docs/原型诊断.md](docs/原型诊断.md) |
 | 数据字典 / 口径 | ✅ | [docs/数据字典草稿.md](docs/数据字典草稿.md) |
-| 后端 API | ⬜ | FastAPI + SQLite |
+| 后端 API | 🚧 | 已有 `/api/health`；问答、会话、配置、数据接口待做 |
 | 前端应用 | ⬜ | React + TypeScript + Vite |
 | 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
 | 自动化测试 | ⬜ | 接口 + 端到端 |
@@ -139,15 +139,39 @@ ai-data-qa/
 - **不混提交**：格式化、重命名、依赖升级不与功能改动放在同一次提交里。
 - **不提交产物**：`*.db`、`.env`、`node_modules`、`dist` 均已在 `.gitignore` 中排除。
 
-### 7.3 计划中的本地开发（脚手架落地后补全）
+### 7.3 本地开发（已可用）
+
+```powershell
+cd backend
+
+# 1. 首次：建虚拟环境并装依赖
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+
+# 2. 初始化业务库（幂等，可加 --force 重建）
+python -m app.db.init_db
+python -m app.db.verify
+
+# 3. 启动服务
+uvicorn app.main:app --reload --port 8000
+# 健康检查 http://127.0.0.1:8000/api/health
+# 接口文档 http://127.0.0.1:8000/docs
+```
+
+校验与测试：
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts/check_llm.py --json --max-tokens 800   # 模型连通性
+.\.venv\Scripts\python.exe -m pytest -q                                    # 接口测试
+cd .. && python samples/check_cases.py                                     # 评测语料可执行性
+```
+
+前端（待创建）：
 
 ```bash
-# 后端
-cd backend && pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-
-# 前端（开发态，代理 /api → 8000）
-cd frontend && pnpm install && pnpm dev
+cd frontend && pnpm install && pnpm dev   # 开发态代理 /api → 8000
 ```
 
 ### 7.4 环境变量（规划）
