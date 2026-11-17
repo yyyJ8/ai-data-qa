@@ -61,17 +61,20 @@ CATALOG: dict[str, Table] = {
         "fact_ppl", "PPL 项目明细", "一行一个项目",
         {"project_id": "项目ID", "contract_no": "合同号", "unit_id": "经营单元", "industry_id": "行业", "product_line_id": "产品线", "model_id": "型号", "amount": "项目金额（万元）", "stage": "阶段：商机/方案/投标/商务/签约/交付", "risk_delivery": "交付风险：低/中/高", "risk_payment": "回款风险：低/中/高", "risk_overall": "整体风险：低/中/高", "expected_sign_date": "预计签约日期"},
     ),
-    "v_unit_year": Table(
-        "v_unit_year", "视图：单元×年度×产品线完成情况", "已算好完成率，可直接查",
-        {"year": "年份", "unit_name": "单元名称", "line_name": "产品线", "commercial_target": "商业目标", "revenue": "收入", "completion_rate": "完成率（百分数，如 78.5 表示 78.5%）"},
+    "v_unit_overall": Table(
+        "v_unit_overall", "视图：单元维度年度完成情况", "一行 = 年 × 单元，已按单元聚合，问「哪个单元完成率最高/最低」用它",
+        {"year": "年份", "unit_name": "单元名称", "commercial_target": "商业目标合计", "revenue": "收入合计", "completion_rate": "完成率（百分数，78.5 表示 78.5%）"},
     ),
     "v_line_year": Table(
         "v_line_year", "视图：产品线年度收入", "已按年聚合，可直接查同比",
-        {"year": "年份", "line_name": "产品线", "revenue": "收入", "contract_amount": "签约额"},
+        {"year": "年份（整数）", "line_name": "产品线", "revenue": "收入", "contract_amount": "签约额"},
     ),
 }
 
 DIM_TABLES = ["dim_unit", "dim_industry", "dim_product_line", "dim_product", "dim_customer"]
+
+# 底座表：几乎每个问题都要用到，恒定召回
+BASE_TABLES = DIM_TABLES + ["fact_revenue"]
 
 # 业务词 → 事实表（命中即加分）
 KEYWORDS: dict[str, list[str]] = {
@@ -80,13 +83,17 @@ KEYWORDS: dict[str, list[str]] = {
     "fact_order": ["订单", "合同", "签约", "合同额", "下单"],
     "fact_collection": ["回款", "收款", "到账", "应收", "账期"],
     "fact_ppl": ["项目", "风险", "PPL", "阶段", "商机", "交付"],
-    "v_unit_year": ["完成率", "达成率", "同比"],
+    "v_unit_overall": ["完成率", "达成率", "目标达成", "完成情况"],
     "v_line_year": ["产品线同比", "同比", "增长"],
 }
 
 
-def recall(query: str, k: int = 3) -> list[str]:
-    """返回本次问数需要喂给模型的表清单：维度表 + 得分最高的 k 张事实/视图表。"""
+def recall(query: str, k: int = 2) -> list[str]:
+    """返回本次问数需要喂给模型的表清单。
+
+    维度表与 fact_revenue 是绝大多数问题的底座，恒定包含；
+    事实表/视图再按关键词得分补 k 张，避免把 fact_revenue 挤出去。
+    """
     text = query.lower()
     scored: list[tuple[int, str]] = []
     for table, words in KEYWORDS.items():
@@ -95,13 +102,10 @@ def recall(query: str, k: int = 3) -> list[str]:
             scored.append((score, table))
     scored.sort(key=lambda x: (-x[0], x[1]))
 
-    selected = list(DIM_TABLES)
+    selected = list(BASE_TABLES)
     for _, table in scored[:k]:
         if table not in selected:
             selected.append(table)
-    if not scored:
-        # 没有命中任何业务词时，给一张最通用的表，避免空手
-        selected.append("fact_revenue")
     return selected
 
 
