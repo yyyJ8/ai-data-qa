@@ -84,7 +84,7 @@ npx serve Data
 | 原型功能分析 | ✅ | [docs/功能分析.md](docs/功能分析.md) |
 | 原型问题诊断 | ✅ | [docs/原型诊断.md](docs/原型诊断.md) |
 | 数据字典 / 口径 | ✅ | [docs/数据字典草稿.md](docs/数据字典草稿.md) |
-| 后端 API | 🚧 | 已有 `/api/health`；问答、会话、配置、数据接口待做 |
+| 后端 API | 🚧 | 健康检查、问数 SSE、会话 CRUD 已可用；配置/数据/反馈待做 |
 | 前端应用 | ⬜ | React + TypeScript + Vite |
 | 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
 | 自动化测试 | ⬜ | 接口 + 端到端 |
