@@ -157,6 +157,27 @@ LEFT JOIN fact_revenue r
 GROUP BY t.year, u.unit_name, pl.line_name, t.commercial_target;
 
 -- ---------------------------------------------------------------------------
+-- 视图：单元维度的年度完成情况（单元粒度聚合，避免产品线粒度误用）
+-- ---------------------------------------------------------------------------
+CREATE VIEW IF NOT EXISTS v_unit_overall AS
+SELECT
+    t.year,
+    u.unit_name,
+    SUM(t.commercial_target) AS commercial_target,
+    COALESCE(MAX(r.revenue), 0) AS revenue,
+    ROUND(COALESCE(MAX(r.revenue), 0) * 100.0 / NULLIF(SUM(t.commercial_target), 0), 1) AS completion_rate
+FROM fact_target t
+JOIN dim_unit u ON u.unit_id = t.unit_id
+LEFT JOIN (
+    SELECT unit_id,
+           CAST(substr(month, 1, 4) AS INTEGER) AS year,
+           SUM(revenue) AS revenue
+    FROM fact_revenue
+    GROUP BY unit_id, CAST(substr(month, 1, 4) AS INTEGER)
+) r ON r.unit_id = t.unit_id AND r.year = t.year
+GROUP BY t.year, u.unit_name;
+
+-- ---------------------------------------------------------------------------
 -- 视图：产品线年度收入与同比
 -- ---------------------------------------------------------------------------
 CREATE VIEW IF NOT EXISTS v_line_year AS
