@@ -161,10 +161,10 @@ GROUP BY t.year, u.unit_name, pl.line_name, t.commercial_target;
 -- ---------------------------------------------------------------------------
 CREATE VIEW IF NOT EXISTS v_line_year AS
 SELECT
-    substr(r.month, 1, 4)    AS year,
+    CAST(substr(r.month, 1, 4) AS INTEGER) AS year,
     pl.line_name,
     SUM(r.revenue)           AS revenue,
     SUM(r.contract_amount)   AS contract_amount
 FROM fact_revenue r
 JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id
-GROUP BY substr(r.month, 1, 4), pl.line_name;
+GROUP BY CAST(substr(r.month, 1, 4) AS INTEGER), pl.line_name;
