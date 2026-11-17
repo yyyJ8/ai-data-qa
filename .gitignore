@@ -36,3 +36,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# ---------- 本地数据库与评测报告 ----------
+backend/data/
+samples/reports/
