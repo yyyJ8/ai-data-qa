@@ -94,6 +94,9 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
                 "completion_tokens": result.completion_tokens,
                 "attempts": result.attempts,
                 "rows": len(result.rows),
+                # 存结果集，重开会话时能还原表格与图表（最多 100 行）
+                "columns": result.columns,
+                "rows_data": result.rows[:100],
             },
         )
         yield _sse(
