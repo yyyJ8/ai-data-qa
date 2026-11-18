@@ -62,6 +62,22 @@ test('应用配置保存后给出提示', async ({ page }) => {
   await expect(page.locator('.toast')).toContainText('应用配置已保存')
 })
 
+test('重开会话能还原表格与图表', async ({ page, request }) => {
+  const health = await (await request.get('/api/health')).json()
+  test.skip(!health.llm?.configured, '未配置模型 Key，跳过真实问数')
+
+  await page.goto('/')
+  await page.getByPlaceholder(/请写下您的想法/).fill('2026年各产品线收入占比')
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(page.locator('.answer-card .chart canvas')).toBeVisible({ timeout: 50_000 })
+
+  await page.reload()
+  await page.locator('.session-item').first().click()
+
+  await expect(page.locator('.answer-card .data-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.answer-card .chart canvas')).toBeVisible()
+})
+
 test('反馈提交后会出现在校对列表', async ({ page, request }) => {
   const question = `e2e 反馈 ${Date.now()}`
   const created = await request.post('/api/feedback', { data: { question, reason: 'e2e' } })
