@@ -46,3 +46,4 @@ samples/reports/
 frontend/e2e-cases.jsonl
 frontend/test-results/
 frontend/playwright-report/
+storage/
