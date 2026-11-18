@@ -1,4 +1,4 @@
-﻿"""LLM 客户端封装：统一超时、思考开关与 JSON 解析。
+"""LLM 客户端封装：统一超时、思考开关与 JSON 解析。
 
 注意 deepseek-flash 的两个特性（M0 实测）：
 1. 默认开启思考，reasoning token 计入 max_tokens —— 预算不足会返回空 content；
@@ -52,13 +52,24 @@ def extract_json(text: str) -> dict:
 
 
 class LLMClient:
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        model: str | None = None,
+        base_url: str | None = None,
+        thinking: bool | None = None,
+        reasoning_effort: str | None = None,
+    ) -> None:
         self.settings = settings or get_settings()
         if not self.settings.llm_configured:
             raise LLMError("LLM_API_KEY 未配置")
+        self.model = model or self.settings.llm_model
+        self.thinking = self.settings.llm_thinking if thinking is None else thinking
+        self.reasoning_effort = reasoning_effort or self.settings.llm_reasoning_effort
         self._client = OpenAI(
             api_key=self.settings.llm_api_key.get_secret_value(),
-            base_url=self.settings.llm_base_url,
+            base_url=base_url or self.settings.llm_base_url,
             timeout=self.settings.llm_timeout,
         )
 
@@ -69,15 +80,15 @@ class LLMClient:
         thinking: bool | None = None,
         temperature: float = 0.0,
     ) -> LLMResponse:
-        use_thinking = self.settings.llm_thinking if thinking is None else thinking
+        use_thinking = self.thinking if thinking is None else thinking
         extra_body: dict = {"thinking": {"type": "enabled" if use_thinking else "disabled"}}
         if use_thinking:
-            extra_body["reasoning_effort"] = self.settings.llm_reasoning_effort
+            extra_body["reasoning_effort"] = self.reasoning_effort
 
         start = time.perf_counter()
         try:
             resp = self._client.chat.completions.create(
-                model=self.settings.llm_model,
+                model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
