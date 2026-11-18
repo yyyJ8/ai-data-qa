@@ -43,3 +43,6 @@ samples/reports/
 
 # ---------- Ç°¶Ë¹¹½¨»º´æ ----------
 *.tsbuildinfo
+frontend/e2e-cases.jsonl
+frontend/test-results/
+frontend/playwright-report/
