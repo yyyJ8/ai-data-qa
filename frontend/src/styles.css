@@ -1587,3 +1587,24 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+
+.crumb-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.crumb-sep {
+  margin: 0 6px;
+  color: var(--muted);
+}
+
+/* 表格内容居中（反馈列表等） */
+.data-table.center th,
+.data-table.center td {
+  text-align: center;
+}

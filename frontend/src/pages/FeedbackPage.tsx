@@ -102,7 +102,7 @@ export function FeedbackPage() {
         {items.length === 0 ? (
           <p className="muted">暂无反馈</p>
         ) : (
-          <table className="data-table">
+          <table className="data-table center">
             <thead>
               <tr>
                 <th style={{ width: 48 }}>#</th>

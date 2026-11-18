@@ -44,12 +44,12 @@ const PAGE_TITLES: Record<Page, string> = {
   feedback: '回复校对',
 }
 
-const GROUP_OF: Record<Page, string> = {
-  qa: 'qa',
-  config: '系统管理 / 应用配置',
-  model: '系统管理 / 模型配置',
-  data: '系统管理 / 数据台账',
-  feedback: '反馈管理 / 回复校对',
+const PARENT: Record<Page, string | null> = {
+  qa: null,
+  config: '系统管理',
+  model: '系统管理',
+  data: null,
+  feedback: '反馈管理',
 }
 
 export default function App() {
@@ -157,7 +157,21 @@ export default function App() {
                 <span className="icon-btn ghost-holder" />
               </>
             ) : (
-              <div className="breadcrumb">{GROUP_OF[page]}</div>
+              <div className="breadcrumb">
+                {PARENT[page] && (
+                  <>
+                    {page === 'model' ? (
+                      <button type="button" className="crumb-link" onClick={() => setPage('config')}>
+                        {PARENT[page]}
+                      </button>
+                    ) : (
+                      <span>{PARENT[page]}</span>
+                    )}
+                    <span className="crumb-sep">/</span>
+                  </>
+                )}
+                <span>{PAGE_TITLES[page]}</span>
+              </div>
             )}
           </div>
 
