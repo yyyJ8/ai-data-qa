@@ -5,39 +5,37 @@
 
 ## 一、快速开始
 
-> 状态：**脚手架尚未创建**（`backend/`、`frontend/` 目前只有占位文件）。下面是目标形态，代码落地后即按此执行。
-
 ```bash
-# 1. 配置环境变量
-cp backend/.env.example backend/.env   # 填入 LLM API Key
+# 1. 配置环境变量（填入 LLM API Key）
+cp backend/.env.example backend/.env
 
-# 2. 一键启动
-docker compose up -d
+# 2. 一键构建并启动（首次构建约 3–5 分钟）
+docker compose up -d --build
 
 # 3. 访问
-# 前端 http://localhost:8000
-# 接口文档 http://localhost:8000/docs
+# 前端与接口同端口：http://localhost:8000
+# 接口文档：http://localhost:8000/docs
 ```
 
-当前可先预览官方原型（只读，不要修改）：
+容器启动时会自动建库灌数（幂等）；业务数据与元数据落在宿主机 `./storage`，删掉该目录即可从零重建。
+
+不做 Docker 时，按「七、开发说明」分别启动前后端。
+
+官方原型（只读，仅供对照，**不是交付物**）：
 
 ```bash
-# 任选其一：静态服务器托管 Data/ 目录
 npx serve Data
-# 或 python -m http.server 8000 --directory Data
 ```
-
-原型预览用于对照交互，**不是本项目的交付物**。
 
 ## 二、技术栈
 
 | 层 | 选型 |
 |---|---|
-| 前端 | React + TypeScript + Vite，图表用 ECharts |
-| 后端 | Python 3.11 + FastAPI |
-| 数据 | SQLite（text2sql 目标库），自建销售经管数据集 |
-| 模型 | 待定（DeepSeek / 通义） |
-| 部署 | Docker Compose，Linux |
+| 前端 | React 18 + TypeScript + Vite，图表用 ECharts 5 |
+| 后端 | Python 3.12 + FastAPI + SQLite |
+| 数据 | SQLite（text2sql 目标库），自建销售经管数据集 6,433 行 |
+| 模型 | DeepSeek `deepseek-flash`（OpenAI 兼容协议，支持思考模式） |
+| 部署 | Docker 多阶段构建 + Compose，Linux 容器 |
 
 ## 三、功能清单
 
@@ -47,14 +45,14 @@ npx serve Data
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
-| 数据源选择 | ⬜ | 原型有弹窗无入口，需重新设计为可问答数据域 |
-| 自然语言提问 → 四段式回答 | 🚧 | 后端链路已可用（命令行），四段式由前端渲染 |
+| 数据源选择 | ➖ | 不做：原型弹窗本就无入口，本实现固定数据域问答 |
+| 自然语言提问 → 四段式回答 | ✅ | 流式渲染，真实 SQL 与结果集 |
 | text2sql 链路 | ✅ | 召回 → 生成 → 校验 → 执行；评测数值命中 30/30 |
-| 分析过程可解释 | ⬜ | 选表 → 推理 → SQL → 结果 → 结束（需真实数据） |
-| 追问与延伸问题 | ⬜ | 基于结果维度生成，可点击直达 |
-| 会话管理 | ⬜ | 新建 / 重命名 / 置顶 / 删除 / 历史列表 |
-| 消息操作 | ⬜ | 复制 / 编辑重发 / 重新生成 / 收藏 |
-| 快捷提问 | ⬜ | 常问（按频次）/ 收藏 |
+| 分析过程可解释 | ✅ | 选表 / 生成 SQL / 执行查询三步，均为真实过程 |
+| 追问与延伸问题 | ✅ | 携带最近 2 轮历史 + 模型生成 2–3 条追问 chips |
+| 会话管理 | ✅ | 新建 / 重命名 / 置顶 / 删除 / 历史列表 |
+| 消息操作 | 🚧 | 复制结论、再问一次、反馈已做；编辑重发待做 |
+| 快捷提问 | 🚧 | 开场白快捷问题可用；按频次常问与收藏待做 |
 | 反馈（数据有误） | ✅ | 回答卡片底部一键提交，进入回复校对列表 |
 
 ### 系统管理
@@ -133,6 +131,7 @@ ai-data-qa/
 - [docs/功能分析.md](docs/功能分析.md) —— 模块清单、交互链路、数据结构、真实现 vs 外壳判定
 - [docs/数据字典草稿.md](docs/数据字典草稿.md) —— 从原型反推的业务口径、枚举与表结构
 - [docs/实现计划.md](docs/实现计划.md) —— 里程碑、架构、接口契约、评测方案与风险
+- [docs/演示脚本.md](docs/演示脚本.md) —— 3 分钟演示路径与应答口径
 
 ## 六、AI 使用声明
 
@@ -192,12 +191,21 @@ pnpm e2e        # Playwright 端到端（用系统 Chrome，需前后端可启�
 
 ### 7.4 环境变量（规划）
 
-| 变量 | 说明 |
-|---|---|
-| `LLM_PROVIDER` / `LLM_BASE_URL` | 模型供应方与接入地址 |
-| `LLM_API_KEY` | 密钥，仅后端读取，不入库不返前端 |
-| `LLM_MODEL` | 默认模型名 |
-| `DB_PATH` | SQLite 文件路径 |
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `LLM_BASE_URL` | `https://api.deepseek.com` | 模型接入地址 |
+| `LLM_MODEL` | `deepseek-flash` | 模型名 |
+| `LLM_API_KEY` | 空 | 密钥，仅后端读取，不入库不返前端 |
+| `LLM_THINKING` | `true` | 是否开启思考模式 |
+| `LLM_REASONING_EFFORT` | `high` | 思考强度 low/medium/high |
+| `LLM_TIMEOUT` | `90` | 单次请求超时（秒） |
+| `DB_PATH` | `data/warehouse.db` | 业务库（只读），相对 backend/ |
+| `APP_DB_PATH` | `data/app.db` | 元数据库（会话/配置/反馈） |
+| `SQL_MAX_ROWS` | `200` | 单次查询行数上限 |
+| `SQL_TIMEOUT_MS` | `5000` | 单条 SQL 超时（毫秒） |
+| `EVAL_CASES_PATH` | `samples/eval_cases.jsonl` | 校对回灌目标 |
+| `STATIC_DIR` | `../frontend/dist` | 前端产物目录，存在则同端口托管 |
+| `LOG_LEVEL` | `INFO` | 日志级别 |
 
 ### 7.5 数据初始化
 
