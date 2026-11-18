@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+﻿import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
 
@@ -72,7 +72,7 @@ test('重开会话能还原表格与图表', async ({ page, request }) => {
   await expect(page.locator('.answer-card .chart canvas')).toBeVisible({ timeout: 50_000 })
 
   await page.reload()
-  await page.locator('.session-item').first().click()
+  await page.locator('.session-item .session-main').first().click()
 
   await expect(page.locator('.answer-card .data-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.answer-card .chart canvas')).toBeVisible()
