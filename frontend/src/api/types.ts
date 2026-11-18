@@ -84,5 +84,14 @@ export interface FeedbackItem {
   reason: string | null
   status: '待处理' | '已处理'
   remark: string | null
+  corrected_sql: string | null
+  promoted_at: string | null
   created_at: string
+}
+
+export interface PromoteResult {
+  case_id: string
+  question: string
+  rows: number
+  file: string
 }

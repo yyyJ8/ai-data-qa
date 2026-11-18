@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { apiClient } from '../api/client'
-import type { FeedbackItem } from '../api/types'
+import type { FeedbackItem, PromoteResult } from '../api/types'
 
 const FILTERS = [
   { value: '', label: '全部' },
@@ -13,6 +13,7 @@ export function FeedbackPage() {
   const [filter, setFilter] = useState('')
   const [selected, setSelected] = useState<FeedbackItem | null>(null)
   const [remark, setRemark] = useState('')
+  const [correctedSql, setCorrectedSql] = useState('')
   const [status, setStatus] = useState<'待处理' | '已处理'>('已处理')
   const [message, setMessage] = useState<string | null>(null)
 
@@ -33,16 +34,42 @@ export function FeedbackPage() {
     setSelected(item)
     setStatus(item.status)
     setRemark(item.remark ?? '')
+    setCorrectedSql(item.corrected_sql ?? '')
   }
 
   const save = async () => {
     if (!selected) return
     try {
-      await apiClient.patch<FeedbackItem>(`/api/feedback/${selected.feedback_id}`, { status, remark })
-      setSelected(null)
+      const updated = await apiClient.patch<FeedbackItem>(`/api/feedback/${selected.feedback_id}`, {
+        status,
+        remark,
+        corrected_sql: correctedSql,
+      })
+      setSelected(updated)
       setMessage('处理已保存')
       await load()
       window.setTimeout(() => setMessage(null), 2500)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  const promote = async () => {
+    if (!selected) return
+    try {
+      if (correctedSql.trim() !== (selected.corrected_sql ?? '').trim()) {
+        await apiClient.patch<FeedbackItem>(`/api/feedback/${selected.feedback_id}`, {
+          corrected_sql: correctedSql,
+        })
+      }
+      const result = await apiClient.post<PromoteResult>(
+        `/api/feedback/${selected.feedback_id}/promote`,
+        {},
+      )
+      setSelected(null)
+      setMessage(`已写入评测集：${result.case_id}（${result.rows} 行）`)
+      await load()
+      window.setTimeout(() => setMessage(null), 3500)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error))
     }
@@ -99,9 +126,13 @@ export function FeedbackPage() {
                   </td>
                   <td>{item.created_at}</td>
                   <td>
-                    <button type="button" className="link" onClick={() => open(item)}>
-                      处理
-                    </button>
+                    {item.promoted_at ? (
+                      <span className="muted small">已回灌</span>
+                    ) : (
+                      <button type="button" className="link" onClick={() => open(item)}>
+                        处理
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -126,13 +157,32 @@ export function FeedbackPage() {
             </label>
 
             <label className="field">
+              <span className="field-label">修正 SQL（写入评测集用，需可执行且返回数据）</span>
+              <textarea
+                rows={4}
+                className="mono"
+                value={correctedSql}
+                placeholder="SELECT unit_name AS 单元 FROM dim_unit WHERE ..."
+                onChange={(event) => setCorrectedSql(event.target.value)}
+              />
+            </label>
+
+            <label className="field">
               <span className="field-label">处理备注</span>
-              <textarea rows={3} value={remark} onChange={(event) => setRemark(event.target.value)} />
+              <textarea rows={2} value={remark} onChange={(event) => setRemark(event.target.value)} />
             </label>
 
             <div className="row-gap">
               <button className="btn primary" type="button" onClick={save}>
                 保存
+              </button>
+              <button
+                className="btn"
+                type="button"
+                onClick={promote}
+                disabled={!!selected.promoted_at || !correctedSql.trim()}
+              >
+                写入评测集
               </button>
               <button className="btn" type="button" onClick={() => setSelected(null)}>
                 取消
