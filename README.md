@@ -61,10 +61,10 @@ npx serve Data
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
-| 模型配置 | ⬜ | 多模型、连通性测试、密钥托管在后端 |
-| 应用配置 | ⬜ | 开场白、延伸问题开关、TTS/STT、常问阈值 |
-| 回复校对 | ⬜ | 列表 / 筛选 / 处理，并支持修正答案回灌 |
-| 模型选择生效 | ⬜ | 配置必须真实作用于问数链路 |
+| 模型配置 | 🚧 | 接口已可用（密钥不入库、只回显掩码、连通性测试真实调用），前端页待做 |
+| 应用配置 | 🚧 | 接口已可用（开场白、延伸问题开关、常问阈值），前端页待做 |
+| 回复校对 | 🚧 | 接口已可用（列表/筛选/处理），修正答案回灌待做 |
+| 模型选择生效 | ✅ | 库内配置直接作用于问数链路 |
 
 > 按作业要求，**不实现登录与用户管理**；权限相关能力不做。
 
@@ -72,10 +72,10 @@ npx serve Data
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
-| 台账表格 | ⬜ | 商业市场台账 / PPL 明细 / 整体目标 |
-| 筛选、排序、分页 | ⬜ | 服务端分页 |
+| 台账表格 | 🚧 | 接口已可用（服务端分页/过滤/排序），前端页待做 |
+| 筛选、排序、分页 | ✅ | `GET /api/data/{table}` |
 | 导入 Excel | ⬜ | 解析、校验、失败明细 |
-| 导出 Excel | ⬜ | 真实 xlsx，非 CSV 改名 |
+| 导出 Excel | ✅ | `GET /api/data/{table}/export`，真实 xlsx |
 
 ### 工程与交付
 
@@ -84,7 +84,7 @@ npx serve Data
 | 原型功能分析 | ✅ | [docs/功能分析.md](docs/功能分析.md) |
 | 原型问题诊断 | ✅ | [docs/原型诊断.md](docs/原型诊断.md) |
 | 数据字典 / 口径 | ✅ | [docs/数据字典草稿.md](docs/数据字典草稿.md) |
-| 后端 API | 🚧 | 健康检查、问数 SSE、会话 CRUD 已可用；配置/数据/反馈待做 |
+| 后端 API | ✅ | 健康 / 问数 SSE / 会话 / 配置 / 数据 / 反馈 |
 | 前端应用 | ⬜ | React + TypeScript + Vite |
 | 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
 | 自动化测试 | ⬜ | 接口 + 端到端 |
@@ -94,16 +94,27 @@ npx serve Data
 
 ```
 ai-data-qa/
-├── Data/                    # 官方原型，只读，未做任何改动（sha256 见 docs/原型诊断.md）
+├── Data/                    # 官方原型，只读（sha256 见 docs/原型诊断.md）
 │   ├── index.html           # 单文件原型（1.6 MB）
 │   └── README.md            # 官方作业要求
-├── backend/                 # FastAPI 服务 + text2sql 链路（待创建）
-├── frontend/                # React 前端（待创建）
+├── backend/
+│   ├── app/
+│   │   ├── api/             # 问数 SSE、会话、配置、数据、反馈
+│   │   ├── core/            # 配置加载（.env → Settings）
+│   │   ├── db/              # 建表、种子数据、初始化、自检、元数据库
+│   │   ├── llm/             # 模型客户端与 Prompt
+│   │   ├── services/        # 问数主链路、模型配置
+│   │   └── sql/             # 只读校验闸门、表目录与召回
+│   ├── scripts/             # ask / eval / check_llm
+│   ├── tests/               # 70 条测试
+│   └── data/                # 本地 SQLite（已忽略，不入库）
 ├── docs/
-│   ├── 功能分析.md          # 模块清单、交互链路、数据结构、真实现 vs 外壳
-│   ├── 原型诊断.md          # 29 项分级问题，含证据行号与修复方向
-│   └── 数据字典草稿.md      # 业务口径、枚举、建议表结构、问句映射
-├── samples/                 # 示例问句与预期结果（待创建）
+│   ├── 功能分析.md
+│   ├── 原型诊断.md
+│   ├── 数据字典草稿.md
+│   └── 实现计划.md
+├── samples/                 # 30 条评测语料、检查脚本、M2 基线报告
+├── frontend/                # React 前端（待创建）
 ├── docker-compose.yml       # 待创建
 └── README.md
 ```
@@ -187,3 +198,28 @@ cd frontend && pnpm install && pnpm dev   # 开发态代理 /api → 8000
 ### 7.5 数据初始化
 
 数据库由脚本幂等创建（建表 + 灌样例数据），**不提交 `*.db`**；容器启动时自动执行，保证任何环境都能从零复现。
+
+### 7.6 接口一览
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/health` | 存活、模型配置、业务库状态 |
+| POST | `/api/chat` | 问数，SSE：`session → stage×3 → table → chart → insight → done` |
+| GET | `/api/sessions` | 会话列表（置顶优先） |
+| GET | `/api/sessions/{id}` | 会话详情（含消息） |
+| PATCH / DELETE | `/api/sessions/{id}` | 改名/置顶、删除 |
+| GET / PUT | `/api/config/app` | 开场白、快捷问题、延伸问题开关、常问阈值 |
+| GET / PUT | `/api/config/model` | 模型/思考参数；密钥只回显掩码 |
+| POST | `/api/config/model/test` | 真实调用一次，返回连通性与延迟 |
+| GET | `/api/data/{table}` | 台账分页 + 关键词过滤 + 排序 |
+| GET | `/api/data/{table}/export` | 导出真实 xlsx |
+| GET / POST | `/api/feedback` | 反馈列表、提交 |
+| PATCH | `/api/feedback/{id}` | 处理（状态/备注） |
+
+SSE 示例：
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"2026年收入前3的经营单元"}'
+```
