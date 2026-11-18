@@ -1,12 +1,12 @@
 {
-  "generated_at": "20261118-001000",
+  "generated_at": "20261118-215136",
   "model": "deepseek-flash",
   "total": 30,
-  "exact": 22,
-  "value": 8,
+  "exact": 21,
+  "value": 9,
   "unordered": 0,
   "executable": 30,
-  "elapsed_s": 54.3,
+  "elapsed_s": 68.2,
   "results": [
     {
       "id": "q01",
@@ -15,8 +15,8 @@
       "detail": "",
       "sql": "SELECT u.unit_name AS 经营单元, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id WHERE substr(r.month,1,4) = '2026' GROUP BY u.unit_name ORDER BY 收入额 DESC LIMIT 10",
       "ref_sql": "SELECT u.unit_name, SUM(r.revenue) AS revenue_2026 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id WHERE substr(r.month,1,4)='2026' GROUP BY u.unit_name ORDER BY 2 DESC LIMIT 10",
-      "elapsed_ms": 1569,
-      "tokens": 1194
+      "elapsed_ms": 1554,
+      "tokens": 1339
     },
     {
       "id": "q02",
@@ -25,18 +25,18 @@
       "detail": "",
       "sql": "SELECT pl.line_name AS 产品线, SUM(r.revenue) AS 收入额, ROUND(SUM(r.revenue)*100.0/(SELECT SUM(revenue) FROM fact_revenue WHERE substr(month,1,4)='2026'),1) AS 占比 FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE substr(r.month,1,4) = '2026' GROUP BY pl.line_name ORDER BY 收入额 DESC",
       "ref_sql": "SELECT pl.line_name, SUM(r.revenue) AS rev, ROUND(SUM(r.revenue)*100.0/(SELECT SUM(revenue) FROM fact_revenue WHERE substr(month,1,4)='2026'),1) AS pct FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE substr(r.month,1,4)='2026' GROUP BY pl.line_name ORDER BY 2 DESC",
-      "elapsed_ms": 1105,
-      "tokens": 1227
+      "elapsed_ms": 1475,
+      "tokens": 1386
     },
     {
       "id": "q03",
       "question": "2026年各产品线收入同比变化",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT line_name AS 产品线, SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) AS 收入2026, SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END) AS 收入2025, ROUND((SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) - SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END)) * 100.0 / NULLIF(SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END), 0), 1) AS 同比变化率 FROM v_line_year WHERE year IN (2025, 2026) GROUP BY line_name ORDER BY 同比变化率 DESC",
+      "sql": "SELECT pl.line_name AS 产品线, SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue ELSE 0 END) AS 收入2026, SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue ELSE 0 END) AS 收入2025, ROUND((SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue ELSE 0 END) - SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue ELSE 0 END))*100.0 / NULLIF(SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue ELSE 0 END),0),1) AS 同比增速 FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE substr(r.month,1,4) IN ('2025','2026') GROUP BY pl.line_name ORDER BY 收入2026 DESC",
       "ref_sql": "SELECT pl.line_name, SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue END) AS rev_2026, SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue END) AS rev_2025, ROUND((SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue END)-SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue END))*100.0/SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue END),1) AS yoy_pct FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id=r.product_line_id GROUP BY pl.line_name ORDER BY 4 DESC",
-      "elapsed_ms": 1770,
-      "tokens": 1504
+      "elapsed_ms": 2835,
+      "tokens": 1879
     },
     {
       "id": "q04",
@@ -45,28 +45,28 @@
       "detail": "",
       "sql": "SELECT u.unit_name AS 经营单元, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id JOIN dim_industry i ON i.industry_id = r.industry_id WHERE substr(r.month,1,4) = '2026' AND i.industry_category = '政企' GROUP BY u.unit_name HAVING SUM(r.revenue) BETWEEN 3000 AND 5000 ORDER BY 收入额 DESC",
       "ref_sql": "SELECT u.unit_name, SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_unit u ON u.unit_id=r.unit_id JOIN dim_industry i ON i.industry_id=r.industry_id WHERE i.industry_category='政企' AND substr(r.month,1,4)='2026' GROUP BY u.unit_name HAVING SUM(r.revenue) BETWEEN 3000 AND 5000 ORDER BY 2 DESC",
-      "elapsed_ms": 1117,
-      "tokens": 1291
+      "elapsed_ms": 1533,
+      "tokens": 1430
     },
     {
       "id": "q05",
       "question": "北京代表处2026年各产品线的目标和完成率",
       "outcome": "value",
       "detail": "ref=3行 got=3行",
-      "sql": "SELECT pl.line_name AS 产品线, t.commercial_target AS 商业目标, SUM(r.revenue) AS 收入额, ROUND(SUM(r.revenue)*100.0/NULLIF(t.commercial_target,0),1) AS 完成率 FROM fact_target t JOIN dim_unit u ON u.unit_id = t.unit_id JOIN dim_product_line pl ON pl.product_line_id = t.product_line_id LEFT JOIN fact_revenue r ON r.unit_id = t.unit_id AND r.product_line_id = t.product_line_id AND substr(r.month,1,4) = '2026' WHERE t.year = 2026 AND u.unit_name = '北京代表处' GROUP BY pl.line_name, t.commercial_target ORDER BY 收入额 DESC",
+      "sql": "SELECT pl.line_name AS 产品线, t.commercial_target AS 商业目标, COALESCE(r.rev,0) AS 收入额, ROUND(COALESCE(r.rev,0)*100.0/t.commercial_target,1) AS 完成率 FROM fact_target t JOIN dim_product_line pl ON pl.product_line_id = t.product_line_id JOIN dim_unit u ON u.unit_id = t.unit_id LEFT JOIN (SELECT unit_id, product_line_id, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4) = '2026' GROUP BY unit_id, product_line_id) r ON r.unit_id = t.unit_id AND r.product_line_id = t.product_line_id WHERE t.year = 2026 AND u.unit_name = '北京代表处' ORDER BY 完成率 DESC",
       "ref_sql": "SELECT pl.line_name, t.commercial_target, ROUND(COALESCE(SUM(r.revenue),0)*100.0/t.commercial_target,1) AS rate FROM fact_target t JOIN dim_unit u ON u.unit_id=t.unit_id JOIN dim_product_line pl ON pl.product_line_id=t.product_line_id LEFT JOIN fact_revenue r ON r.unit_id=t.unit_id AND r.product_line_id=t.product_line_id AND substr(r.month,1,4)=CAST(t.year AS TEXT) WHERE t.year=2026 AND u.unit_name='北京代表处' GROUP BY pl.line_name, t.commercial_target ORDER BY rate DESC",
-      "elapsed_ms": 3416,
-      "tokens": 1867
+      "elapsed_ms": 2536,
+      "tokens": 1938
     },
     {
       "id": "q06",
       "question": "2026年销售最多的3个产品型号",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT m.model_name AS 产品型号, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_product m ON m.model_id = r.model_id WHERE substr(r.month,1,4) = '2026' GROUP BY m.model_name ORDER BY 收入额 DESC LIMIT 3",
+      "sql": "SELECT p.model_name AS 产品型号, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_product p ON p.model_id = r.model_id WHERE substr(r.month,1,4) = '2026' GROUP BY p.model_name ORDER BY 收入额 DESC LIMIT 3",
       "ref_sql": "SELECT p.model_name, SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_product p ON p.model_id=r.model_id WHERE substr(r.month,1,4)='2026' GROUP BY p.model_name ORDER BY 2 DESC LIMIT 3",
-      "elapsed_ms": 1275,
-      "tokens": 1206
+      "elapsed_ms": 1334,
+      "tokens": 1372
     },
     {
       "id": "q07",
@@ -75,18 +75,18 @@
       "detail": "",
       "sql": "SELECT substr(sign_date,1,7) AS 月份, SUM(amount) AS 合同金额 FROM fact_order WHERE substr(sign_date,1,4) = '2026' GROUP BY substr(sign_date,1,7) ORDER BY 月份",
       "ref_sql": "SELECT substr(sign_date,1,7) AS month, SUM(amount) AS amount FROM fact_order WHERE substr(sign_date,1,4)='2026' GROUP BY 1 ORDER BY 1",
-      "elapsed_ms": 1244,
-      "tokens": 1313
+      "elapsed_ms": 2190,
+      "tokens": 1552
     },
     {
       "id": "q08",
       "question": "2026年完成率低于80%的经营单元",
       "outcome": "value",
       "detail": "ref=5行 got=5行",
-      "sql": "SELECT unit_name AS 经营单元, commercial_target AS 商业目标, revenue AS 收入额, completion_rate AS 完成率 FROM v_unit_overall WHERE year = 2026 AND completion_rate < 80 ORDER BY 完成率 ASC",
+      "sql": "SELECT unit_name AS 经营单元, revenue AS 收入额, commercial_target AS 商业目标, completion_rate AS 完成率 FROM v_unit_overall WHERE year = 2026 AND completion_rate < 80 ORDER BY 完成率 ASC",
       "ref_sql": "SELECT unit_name, rate FROM (SELECT u.unit_name AS unit_name, ROUND(COALESCE(x.rev,0)*100.0/t.target,1) AS rate FROM (SELECT unit_id, SUM(commercial_target) AS target FROM fact_target WHERE year=2026 GROUP BY unit_id) t JOIN dim_unit u ON u.unit_id=t.unit_id LEFT JOIN (SELECT unit_id, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4)='2026' GROUP BY unit_id) x ON x.unit_id=t.unit_id) WHERE rate < 80 ORDER BY rate",
-      "elapsed_ms": 706,
-      "tokens": 1395
+      "elapsed_ms": 1307,
+      "tokens": 1532
     },
     {
       "id": "q09",
@@ -95,18 +95,18 @@
       "detail": "",
       "sql": "SELECT i.industry_name AS 行业, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_industry i ON i.industry_id = r.industry_id WHERE substr(r.month,1,4) = '2026' GROUP BY i.industry_name ORDER BY 收入额 DESC",
       "ref_sql": "SELECT i.industry_name, SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_industry i ON i.industry_id=r.industry_id WHERE substr(r.month,1,4)='2026' GROUP BY i.industry_name ORDER BY 2 DESC",
-      "elapsed_ms": 973,
-      "tokens": 1186
+      "elapsed_ms": 794,
+      "tokens": 1330
     },
     {
       "id": "q10",
       "question": "2026年收入最高的5个客户",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT c.customer_name AS 客户, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_customer c ON c.customer_id = r.customer_id WHERE substr(r.month,1,4) = '2026' GROUP BY c.customer_name ORDER BY 收入额 DESC LIMIT 5",
+      "sql": "SELECT c.customer_name AS 客户名称, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_customer c ON c.customer_id = r.customer_id WHERE substr(r.month,1,4) = '2026' GROUP BY c.customer_name ORDER BY 收入额 DESC LIMIT 5",
       "ref_sql": "SELECT c.customer_name, SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_customer c ON c.customer_id=r.customer_id WHERE substr(r.month,1,4)='2026' GROUP BY c.customer_name ORDER BY 2 DESC LIMIT 5",
-      "elapsed_ms": 831,
-      "tokens": 1193
+      "elapsed_ms": 1242,
+      "tokens": 1345
     },
     {
       "id": "q11",
@@ -115,8 +115,8 @@
       "detail": "ref=5行 got=5行",
       "sql": "SELECT u.unit_name AS 经营单元, SUM(c.actual_amount) AS 实际回款, SUM(c.plan_amount) AS 计划回款, ROUND(SUM(c.actual_amount)*100.0/SUM(c.plan_amount),1) AS 回款率 FROM fact_collection c JOIN dim_unit u ON u.unit_id = c.unit_id WHERE substr(c.month,1,4) = '2026' GROUP BY u.unit_name ORDER BY 回款率 DESC LIMIT 5",
       "ref_sql": "SELECT u.unit_name, SUM(fc.plan_amount) AS plan, SUM(fc.actual_amount) AS actual, ROUND(SUM(fc.actual_amount)*100.0/SUM(fc.plan_amount),1) AS rate FROM fact_collection fc JOIN dim_unit u ON u.unit_id=fc.unit_id WHERE substr(fc.month,1,4)='2026' GROUP BY u.unit_name ORDER BY 4 DESC LIMIT 5",
-      "elapsed_ms": 1024,
-      "tokens": 1337
+      "elapsed_ms": 1528,
+      "tokens": 1514
     },
     {
       "id": "q12",
@@ -125,58 +125,58 @@
       "detail": "",
       "sql": "SELECT COUNT(*) AS 高风险项目数, SUM(amount) AS 涉及金额 FROM fact_ppl WHERE risk_overall = '高'",
       "ref_sql": "SELECT COUNT(*) AS cnt, SUM(amount) AS total FROM fact_ppl WHERE risk_overall='高'",
-      "elapsed_ms": 1026,
-      "tokens": 1328
+      "elapsed_ms": 1481,
+      "tokens": 1487
     },
     {
       "id": "q13",
       "question": "2026年各季度收入",
       "outcome": "value",
       "detail": "ref=3行 got=3行",
-      "sql": "SELECT 'Q' || ((CAST(substr(r.month,6,2) AS INTEGER)+2)/3) AS 季度, SUM(r.revenue) AS 收入额 FROM fact_revenue r WHERE substr(r.month,1,4) = '2026' GROUP BY 季度 ORDER BY 季度",
+      "sql": "SELECT CASE substr(month,6,2) WHEN '01' THEN 'Q1' WHEN '02' THEN 'Q1' WHEN '03' THEN 'Q1' WHEN '04' THEN 'Q2' WHEN '05' THEN 'Q2' WHEN '06' THEN 'Q2' WHEN '07' THEN 'Q3' WHEN '08' THEN 'Q3' WHEN '09' THEN 'Q3' ELSE 'Q4' END AS 季度, SUM(revenue) AS 收入额 FROM fact_revenue WHERE substr(month,1,4) = '2026' GROUP BY 季度 ORDER BY 季度",
       "ref_sql": "SELECT substr(month,1,4) AS year, 'Q'||((CAST(substr(month,6,2) AS INTEGER)+2)/3) AS quarter, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4)='2026' GROUP BY 1,2 ORDER BY 2",
-      "elapsed_ms": 1315,
-      "tokens": 1287
+      "elapsed_ms": 2279,
+      "tokens": 1493
     },
     {
       "id": "q14",
       "question": "2026年上半年和2025年上半年收入对比",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT substr(month,1,4) AS 年度, SUM(revenue) AS 收入额 FROM fact_revenue WHERE substr(month,1,4) IN ('2025','2026') AND substr(month,6,2) <= '06' GROUP BY substr(month,1,4) ORDER BY 年度",
+      "sql": "SELECT substr(month,1,4) AS 年份, SUM(revenue) AS 收入额 FROM fact_revenue WHERE substr(month,1,4) IN ('2025','2026') AND CAST(substr(month,6,2) AS INTEGER) <= 6 GROUP BY substr(month,1,4) ORDER BY 年份",
       "ref_sql": "SELECT substr(month,1,4) AS year, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,6,2) BETWEEN '01' AND '06' GROUP BY 1 ORDER BY 1",
-      "elapsed_ms": 1260,
-      "tokens": 1301
+      "elapsed_ms": 1728,
+      "tokens": 1465
     },
     {
       "id": "q15",
       "question": "哪个月份收入最高",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT r.month AS 月份, SUM(r.revenue) AS 收入额 FROM fact_revenue r GROUP BY r.month ORDER BY 收入额 DESC LIMIT 1",
+      "sql": "SELECT month AS 月份, SUM(revenue) AS 收入额 FROM fact_revenue GROUP BY month ORDER BY 收入额 DESC LIMIT 1",
       "ref_sql": "SELECT month, SUM(revenue) AS rev FROM fact_revenue GROUP BY month ORDER BY rev DESC LIMIT 1",
-      "elapsed_ms": 1263,
-      "tokens": 1196
+      "elapsed_ms": 1730,
+      "tokens": 1357
     },
     {
       "id": "q16",
       "question": "2026年9月各产品线收入环比8月",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT pl.line_name AS 产品线, SUM(CASE WHEN r.month = '2026-09' THEN r.revenue ELSE 0 END) AS 九月收入, SUM(CASE WHEN r.month = '2026-08' THEN r.revenue ELSE 0 END) AS 八月收入, ROUND((SUM(CASE WHEN r.month = '2026-09' THEN r.revenue ELSE 0 END) - SUM(CASE WHEN r.month = '2026-08' THEN r.revenue ELSE 0 END)) * 100.0 / NULLIF(SUM(CASE WHEN r.month = '2026-08' THEN r.revenue ELSE 0 END), 0), 1) AS 环比增长率 FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE r.month IN ('2026-08', '2026-09') GROUP BY pl.line_name ORDER BY 九月收入 DESC",
+      "sql": "SELECT pl.line_name AS 产品线, SUM(CASE WHEN r.month='2026-09' THEN r.revenue ELSE 0 END) AS 九月收入, SUM(CASE WHEN r.month='2026-08' THEN r.revenue ELSE 0 END) AS 八月收入, ROUND((SUM(CASE WHEN r.month='2026-09' THEN r.revenue ELSE 0 END) - SUM(CASE WHEN r.month='2026-08' THEN r.revenue ELSE 0 END))*100.0/NULLIF(SUM(CASE WHEN r.month='2026-08' THEN r.revenue ELSE 0 END),0),1) AS 环比增长率 FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE r.month IN ('2026-09','2026-08') GROUP BY pl.line_name ORDER BY 九月收入 DESC",
       "ref_sql": "SELECT pl.line_name, SUM(CASE WHEN month='2026-09' THEN revenue END) AS m09, SUM(CASE WHEN month='2026-08' THEN revenue END) AS m08, ROUND((SUM(CASE WHEN month='2026-09' THEN revenue END)-SUM(CASE WHEN month='2026-08' THEN revenue END))*100.0/SUM(CASE WHEN month='2026-08' THEN revenue END),1) AS mom FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id=r.product_line_id GROUP BY pl.line_name ORDER BY 4 DESC",
-      "elapsed_ms": 2154,
-      "tokens": 1482
+      "elapsed_ms": 2496,
+      "tokens": 1719
     },
     {
       "id": "q17",
       "question": "2025年和2026年的目标与收入合计分别是多少",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT y.yr AS 年份, (SELECT ROUND(SUM(t.commercial_target),1) FROM fact_target t WHERE t.year = y.yr) AS 目标合计, (SELECT ROUND(SUM(r.revenue),1) FROM fact_revenue r WHERE substr(r.month,1,4) = CAST(y.yr AS TEXT)) AS 收入合计 FROM (SELECT 2025 AS yr UNION SELECT 2026) y ORDER BY 年份",
+      "sql": "SELECT t.年份 AS 年份, t.商业目标合计 AS 商业目标, COALESCE(r.收入合计, 0) AS 收入额 FROM (SELECT year AS 年份, SUM(commercial_target) AS 商业目标合计 FROM fact_target WHERE year IN (2025, 2026) GROUP BY year) t LEFT JOIN (SELECT CAST(substr(month,1,4) AS INTEGER) AS 年份, SUM(revenue) AS 收入合计 FROM fact_revenue WHERE substr(month,1,4) IN ('2025','2026') GROUP BY CAST(substr(month,1,4) AS INTEGER)) r ON r.年份 = t.年份 ORDER BY 年份",
       "ref_sql": "SELECT a.year, a.target, COALESCE(b.rev,0) AS rev FROM (SELECT year, SUM(commercial_target) AS target FROM fact_target GROUP BY year) a LEFT JOIN (SELECT CAST(substr(month,1,4) AS INTEGER) AS y, SUM(revenue) AS rev FROM fact_revenue GROUP BY 1) b ON b.y=a.year ORDER BY a.year",
-      "elapsed_ms": 1936,
-      "tokens": 1539
+      "elapsed_ms": 3128,
+      "tokens": 1704
     },
     {
       "id": "q18",
@@ -185,8 +185,8 @@
       "detail": "",
       "sql": "SELECT pl.line_name AS 产品线, COUNT(o.order_id) AS 订单数量, SUM(o.amount) AS 签约金额 FROM fact_order o JOIN dim_product_line pl ON pl.product_line_id = o.product_line_id WHERE substr(o.sign_date,1,4) = '2026' GROUP BY pl.line_name ORDER BY 签约金额 DESC",
       "ref_sql": "SELECT pl.line_name, COUNT(*) AS cnt, SUM(o.amount) AS amount FROM fact_order o JOIN dim_product_line pl ON pl.product_line_id=o.product_line_id WHERE substr(o.sign_date,1,4)='2026' GROUP BY pl.line_name ORDER BY 3 DESC",
-      "elapsed_ms": 1464,
-      "tokens": 1329
+      "elapsed_ms": 1482,
+      "tokens": 1470
     },
     {
       "id": "q19",
@@ -195,8 +195,8 @@
       "detail": "",
       "sql": "SELECT ROUND(AVG(amount),2) AS 平均订单金额 FROM fact_order WHERE substr(sign_date,1,4) = '2026'",
       "ref_sql": "SELECT ROUND(AVG(amount),1) AS avg_amount FROM fact_order WHERE substr(sign_date,1,4)='2026'",
-      "elapsed_ms": 1075,
-      "tokens": 1285
+      "elapsed_ms": 1392,
+      "tokens": 1427
     },
     {
       "id": "q20",
@@ -205,8 +205,8 @@
       "detail": "",
       "sql": "SELECT SUM(r.revenue) AS 收入合计 FROM fact_revenue r JOIN dim_industry i ON i.industry_id = r.industry_id JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id WHERE substr(r.month,1,4) = '2026' AND i.industry_category = '政企' AND pl.line_name = '通用计算'",
       "ref_sql": "SELECT SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_industry i ON i.industry_id=r.industry_id JOIN dim_product_line pl ON pl.product_line_id=r.product_line_id WHERE i.industry_category='政企' AND pl.line_name='通用计算' AND substr(r.month,1,4)='2026'",
-      "elapsed_ms": 1425,
-      "tokens": 1257
+      "elapsed_ms": 1782,
+      "tokens": 1413
     },
     {
       "id": "q21",
@@ -215,38 +215,38 @@
       "detail": "ref=2行 got=2行",
       "sql": "SELECT u.unit_name AS 经营单元, SUM(r.revenue) AS 收入额, ROUND(SUM(r.revenue)*100.0/(SELECT SUM(revenue) FROM fact_revenue WHERE substr(month,1,4)='2026'),1) AS 占比 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id WHERE substr(r.month,1,4) = '2026' GROUP BY u.unit_name HAVING SUM(r.revenue)*100.0/(SELECT SUM(revenue) FROM fact_revenue WHERE substr(month,1,4)='2026') > 10 ORDER BY 收入额 DESC",
       "ref_sql": "SELECT u.unit_name, ROUND(SUM(r.revenue)*100.0/(SELECT SUM(revenue) FROM fact_revenue WHERE substr(month,1,4)='2026'),1) AS pct FROM fact_revenue r JOIN dim_unit u ON u.unit_id=r.unit_id WHERE substr(r.month,1,4)='2026' GROUP BY u.unit_name HAVING pct > 10 ORDER BY pct DESC",
-      "elapsed_ms": 1982,
-      "tokens": 1456
+      "elapsed_ms": 2202,
+      "tokens": 1605
     },
     {
       "id": "q22",
       "question": "2026年收入同比增长最快的产品线",
       "outcome": "value",
       "detail": "ref=1行 got=1行",
-      "sql": "SELECT line_name AS 产品线, SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) AS 收入额_2026, SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END) AS 收入额_2025, ROUND((SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) - SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END)) * 100.0 / SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END), 1) AS 同比增长率 FROM v_line_year WHERE year IN (2025, 2026) GROUP BY line_name HAVING SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END) > 0 ORDER BY 同比增长率 DESC LIMIT 1",
+      "sql": "SELECT line_name AS 产品线, SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) AS 收入2026, SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END) AS 收入2025, ROUND((SUM(CASE WHEN year = 2026 THEN revenue ELSE 0 END) - SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END)) * 100.0 / SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END), 1) AS 同比增长率 FROM v_line_year WHERE year IN (2025, 2026) GROUP BY line_name HAVING SUM(CASE WHEN year = 2025 THEN revenue ELSE 0 END) > 0 ORDER BY 同比增长率 DESC LIMIT 1",
       "ref_sql": "SELECT pl.line_name, ROUND((SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue END)-SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue END))*100.0/SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue END),1) AS yoy FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id=r.product_line_id GROUP BY pl.line_name ORDER BY 2 DESC LIMIT 1",
-      "elapsed_ms": 3194,
-      "tokens": 1772
+      "elapsed_ms": 3111,
+      "tokens": 1787
     },
     {
       "id": "q23",
       "question": "2026年完成率最低的3个经营单元",
       "outcome": "value",
       "detail": "ref=3行 got=3行",
-      "sql": "SELECT unit_name AS 经营单元, commercial_target AS 商业目标, revenue AS 收入额, completion_rate AS 完成率 FROM v_unit_overall WHERE year = 2026 ORDER BY 完成率 ASC LIMIT 3",
+      "sql": "SELECT unit_name AS 经营单元, completion_rate AS 完成率, revenue AS 收入额, commercial_target AS 商业目标 FROM v_unit_overall WHERE year = 2026 ORDER BY completion_rate ASC LIMIT 3",
       "ref_sql": "SELECT unit_name, rate FROM (SELECT u.unit_name AS unit_name, ROUND(COALESCE(x.rev,0)*100.0/t.target,1) AS rate FROM (SELECT unit_id, SUM(commercial_target) AS target FROM fact_target WHERE year=2026 GROUP BY unit_id) t JOIN dim_unit u ON u.unit_id=t.unit_id LEFT JOIN (SELECT unit_id, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4)='2026' GROUP BY unit_id) x ON x.unit_id=t.unit_id) ORDER BY rate LIMIT 3",
-      "elapsed_ms": 1163,
-      "tokens": 1392
+      "elapsed_ms": 1601,
+      "tokens": 1541
     },
     {
       "id": "q24",
       "question": "各行业分别有多少客户",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT i.industry_name AS 行业, COUNT(DISTINCT c.customer_id) AS 客户数 FROM dim_customer c JOIN dim_industry i ON i.industry_id = c.industry_id GROUP BY i.industry_name ORDER BY 客户数 DESC",
+      "sql": "SELECT i.industry_name AS 行业, COUNT(DISTINCT c.customer_id) AS 客户数 FROM dim_industry i LEFT JOIN dim_customer c ON c.industry_id = i.industry_id GROUP BY i.industry_name ORDER BY 客户数 DESC",
       "ref_sql": "SELECT i.industry_name, COUNT(*) AS customers FROM dim_customer c JOIN dim_industry i ON i.industry_id=c.industry_id GROUP BY i.industry_name ORDER BY 2 DESC",
-      "elapsed_ms": 1080,
-      "tokens": 1227
+      "elapsed_ms": 1288,
+      "tokens": 1397
     },
     {
       "id": "q25",
@@ -255,8 +255,8 @@
       "detail": "",
       "sql": "SELECT stage AS 阶段, COUNT(*) AS 项目数, SUM(amount) AS 项目金额 FROM fact_ppl GROUP BY stage ORDER BY 项目数 DESC",
       "ref_sql": "SELECT stage, COUNT(*) AS cnt, SUM(amount) AS amount FROM fact_ppl GROUP BY stage ORDER BY 2 DESC",
-      "elapsed_ms": 1386,
-      "tokens": 1366
+      "elapsed_ms": 1535,
+      "tokens": 1471
     },
     {
       "id": "q26",
@@ -265,8 +265,8 @@
       "detail": "ref=5行 got=5行",
       "sql": "SELECT u.unit_name AS 经营单元, SUM(c.plan_amount) AS 计划回款, SUM(c.actual_amount) AS 实际回款, SUM(c.plan_amount - c.actual_amount) AS 回款缺口 FROM fact_collection c JOIN dim_unit u ON u.unit_id = c.unit_id WHERE substr(c.month,1,4) = '2026' GROUP BY u.unit_name ORDER BY 回款缺口 DESC LIMIT 5",
       "ref_sql": "SELECT u.unit_name, SUM(fc.plan_amount-fc.actual_amount) AS gap FROM fact_collection fc JOIN dim_unit u ON u.unit_id=fc.unit_id WHERE substr(fc.month,1,4)='2026' GROUP BY u.unit_name ORDER BY 2 DESC LIMIT 5",
-      "elapsed_ms": 2030,
-      "tokens": 1462
+      "elapsed_ms": 1608,
+      "tokens": 1489
     },
     {
       "id": "q27",
@@ -275,8 +275,8 @@
       "detail": "",
       "sql": "SELECT r.month AS 月份, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id WHERE u.unit_name = '上海代表处' AND substr(r.month,1,4) = '2026' GROUP BY r.month ORDER BY 月份",
       "ref_sql": "SELECT month, SUM(revenue) AS rev FROM fact_revenue r JOIN dim_unit u ON u.unit_id=r.unit_id WHERE u.unit_name='上海代表处' AND substr(month,1,4)='2026' GROUP BY month ORDER BY month",
-      "elapsed_ms": 954,
-      "tokens": 1209
+      "elapsed_ms": 1832,
+      "tokens": 1392
     },
     {
       "id": "q28",
@@ -285,28 +285,28 @@
       "detail": "",
       "sql": "SELECT pl.line_name AS 产品线, SUM(r.revenue) AS 收入额 FROM fact_revenue r JOIN dim_product_line pl ON pl.product_line_id = r.product_line_id JOIN dim_industry i ON i.industry_id = r.industry_id WHERE substr(r.month,1,4) = '2026' AND i.industry_name = '数字政府' GROUP BY pl.line_name ORDER BY 收入额 DESC",
       "ref_sql": "SELECT pl.line_name, SUM(r.revenue) AS rev FROM fact_revenue r JOIN dim_industry i ON i.industry_id=r.industry_id JOIN dim_product_line pl ON pl.product_line_id=r.product_line_id WHERE i.industry_name='数字政府' AND substr(r.month,1,4)='2026' GROUP BY pl.line_name ORDER BY 2 DESC",
-      "elapsed_ms": 1064,
-      "tokens": 1240
+      "elapsed_ms": 1233,
+      "tokens": 1364
     },
     {
       "id": "q29",
       "question": "2026年订单状态分布",
-      "outcome": "exact",
-      "detail": "",
-      "sql": "SELECT status AS 订单状态, COUNT(*) AS 订单数, SUM(amount) AS 签约金额 FROM fact_order WHERE substr(sign_date,1,4) = '2026' GROUP BY status ORDER BY 订单数 DESC",
-      "ref_sql": "SELECT status, COUNT(*) AS cnt, SUM(amount) AS amount FROM fact_order WHERE substr(sign_date,1,4)='2026' GROUP BY status ORDER BY 2 DESC",
-      "elapsed_ms": 1075,
-      "tokens": 1271
+      "outcome": "value",
+      "detail": "ref=4行 got=4行",
+      "sql": "SELECT status AS 订单状态, COUNT(order_id) AS 订单数, ROUND(COUNT(order_id)*100.0/(SELECT COUNT(order_id) FROM fact_order WHERE substr(sign_date,1,4)='2026'),1) AS 占比 FROM fact_order WHERE substr(sign_date,1,4)='2026' GROUP BY status ORDER BY 订单数 DESC",
+      "ref_sql": "SELECT status, COUNT(*) AS cnt FROM fact_order WHERE substr(sign_date,1,4)='2026' GROUP BY status ORDER BY 2 DESC",
+      "elapsed_ms": 2044,
+      "tokens": 1458
     },
     {
       "id": "q30",
       "question": "2026年收入前5的经营单元及其完成率和同比",
       "outcome": "exact",
       "detail": "",
-      "sql": "SELECT u.unit_name AS 经营单元, ROUND(SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue ELSE 0 END),2) AS 收入额, ROUND(SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue ELSE 0 END)*100.0/(SELECT SUM(t.commercial_target) FROM fact_target t WHERE t.unit_id = u.unit_id AND t.year = 2026),1) AS 完成率, ROUND((SUM(CASE WHEN substr(r.month,1,4)='2026' THEN r.revenue ELSE 0 END)-SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue ELSE 0 END))*100.0/NULLIF(SUM(CASE WHEN substr(r.month,1,4)='2025' THEN r.revenue ELSE 0 END),0),1) AS 同比 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id WHERE substr(r.month,1,4) IN ('2025','2026') GROUP BY u.unit_id, u.unit_name ORDER BY 收入额 DESC LIMIT 5",
+      "sql": "WITH tgt AS (SELECT unit_id, SUM(commercial_target) AS target FROM fact_target WHERE year = 2026 GROUP BY unit_id) SELECT u.unit_name AS 经营单元, SUM(CASE WHEN substr(r.month,1,4) = '2026' THEN r.revenue ELSE 0 END) AS 收入额, ROUND(SUM(CASE WHEN substr(r.month,1,4) = '2026' THEN r.revenue ELSE 0 END) * 100.0 / NULLIF(t.target, 0), 1) AS 完成率, ROUND((SUM(CASE WHEN substr(r.month,1,4) = '2026' THEN r.revenue ELSE 0 END) - SUM(CASE WHEN substr(r.month,1,4) = '2025' THEN r.revenue ELSE 0 END)) * 100.0 / NULLIF(SUM(CASE WHEN substr(r.month,1,4) = '2025' THEN r.revenue ELSE 0 END), 0), 1) AS 同比 FROM fact_revenue r JOIN dim_unit u ON u.unit_id = r.unit_id LEFT JOIN tgt t ON t.unit_id = r.unit_id WHERE substr(r.month,1,4) IN ('2025','2026') GROUP BY u.unit_id, u.unit_name, t.target ORDER BY 收入额 DESC LIMIT 5",
       "ref_sql": "WITH rev26 AS (SELECT unit_id, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4)='2026' GROUP BY unit_id), rev25 AS (SELECT unit_id, SUM(revenue) AS rev FROM fact_revenue WHERE substr(month,1,4)='2025' GROUP BY unit_id), tgt AS (SELECT unit_id, SUM(commercial_target) AS target FROM fact_target WHERE year=2026 GROUP BY unit_id) SELECT u.unit_name, r26.rev AS rev_2026, ROUND(r26.rev*100.0/t.target,1) AS rate, ROUND((r26.rev-r25.rev)*100.0/r25.rev,1) AS yoy FROM rev26 r26 JOIN tgt t ON t.unit_id=r26.unit_id JOIN rev25 r25 ON r25.unit_id=r26.unit_id JOIN dim_unit u ON u.unit_id=r26.unit_id ORDER BY r26.rev DESC LIMIT 5",
-      "elapsed_ms": 4158,
-      "tokens": 2225
+      "elapsed_ms": 9351,
+      "tokens": 3123
     }
   ]
 }
