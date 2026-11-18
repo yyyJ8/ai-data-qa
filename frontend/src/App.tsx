@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ChatPage } from './pages/ChatPage'
+import { ConfigPage } from './pages/ConfigPage'
 import { DataPage } from './pages/DataPage'
+import { FeedbackPage } from './pages/FeedbackPage'
 
 type Page = 'qa' | 'data' | 'config' | 'feedback'
 
@@ -10,19 +12,6 @@ const NAV: { id: Page; label: string; hint: string }[] = [
   { id: 'config', label: '应用配置', hint: '模型与开场白' },
   { id: 'feedback', label: '回复校对', hint: '反馈处理' },
 ]
-
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div className="page">
-      <header className="page-head">
-        <div>
-          <h1>{label}</h1>
-          <p className="muted small">该页面将在下一步实现</p>
-        </div>
-      </header>
-    </div>
-  )
-}
 
 export default function App() {
   const [page, setPage] = useState<Page>('qa')
@@ -55,8 +44,8 @@ export default function App() {
       <main className="main">
         {page === 'qa' && <ChatPage />}
         {page === 'data' && <DataPage />}
-        {page === 'config' && <ComingSoon label="应用配置" />}
-        {page === 'feedback' && <ComingSoon label="回复校对" />}
+        {page === 'config' && <ConfigPage />}
+        {page === 'feedback' && <FeedbackPage />}
       </main>
     </div>
   )
