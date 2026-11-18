@@ -1,0 +1,31 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ai-data-qa:local
+    container_name: ai-data-qa
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # 容器内固定路径；宿主机数据落在 ./storage
+      DB_PATH: data/warehouse.db
+      APP_DB_PATH: data/app.db
+      STATIC_DIR: /app/static
+      EVAL_CASES_PATH: samples/eval_cases.jsonl
+    volumes:
+      - ./storage:/app/data
+      - ./samples:/app/samples
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
