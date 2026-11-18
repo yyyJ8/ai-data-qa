@@ -1,6 +1,6 @@
-"""FastAPI 应用入口。
+﻿"""FastAPI 应用入口。
 
-已接入：健康检查、问数（SSE）、会话管理。配置/数据/反馈接口随后接入。
+已接入：健康检查、问数（SSE）、会话、配置、数据、反馈。
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager, closing
 
 from fastapi import FastAPI
 
-from .api import chat, sessions
+from .api import chat, config, data, feedback, sessions
 from .core.settings import SCHEMA_FILE, Settings, get_settings
 from .db.app_store import AppStore
 
@@ -34,12 +34,15 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="AI问数",
     description="企业级销售经管数据问答平台（text2sql）",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
 app.include_router(chat.router)
 app.include_router(sessions.router)
+app.include_router(config.router)
+app.include_router(data.router)
+app.include_router(feedback.router)
 
 
 def _warehouse_status(settings: Settings) -> dict:

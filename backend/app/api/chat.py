@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 
@@ -17,7 +18,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ..core.settings import get_settings
 from ..db.app_store import AppStore
+from ..services.model_config import build_client
 from ..services.qa import QAResult
 from ..services.qa import answer as run_answer
 from ..sql.schema import recall
@@ -52,7 +55,10 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
         yield _sse("stage", {"step": 1, "title": "选择数据表", "detail": "、".join(tables)})
 
         try:
-            result: QAResult = await anyio.to_thread.run_sync(run_answer, question)
+            client = build_client(store, get_settings())
+            result: QAResult = await anyio.to_thread.run_sync(
+                functools.partial(run_answer, question, client=client)
+            )
         except Exception as exc:  # noqa: BLE001
             logger.exception("问数失败")
             yield _sse("error", {"message": f"{type(exc).__name__}: {exc}"})
