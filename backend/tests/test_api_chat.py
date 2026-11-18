@@ -1,4 +1,4 @@
-"""问数 SSE 接口测试：用假 answer 避免真实调用模型。"""
+﻿"""问数 SSE 接口测试：用假 answer 避免真实调用模型。"""
 
 import json
 
@@ -38,7 +38,7 @@ def parse_events(lines: list[str]) -> list[tuple[str, dict]]:
     return events
 
 
-def fake_ok(question: str) -> QAResult:
+def fake_ok(question: str, **kwargs) -> QAResult:
     return QAResult(
         question=question,
         tables=["dim_unit", "fact_revenue"],
@@ -56,6 +56,7 @@ def fake_ok(question: str) -> QAResult:
 
 def test_chat_streams_expected_events(client, monkeypatch):
     monkeypatch.setattr(chat, "run_answer", fake_ok)
+    monkeypatch.setattr(chat, "build_client", lambda store, settings: object())
 
     with client.stream("POST", "/api/chat", json={"question": "各经营单元收入"}) as resp:
         assert resp.status_code == 200
@@ -73,6 +74,7 @@ def test_chat_streams_expected_events(client, monkeypatch):
 
 def test_chat_persists_messages(client, store, monkeypatch):
     monkeypatch.setattr(chat, "run_answer", fake_ok)
+    monkeypatch.setattr(chat, "build_client", lambda store, settings: object())
 
     with client.stream("POST", "/api/chat", json={"question": "各经营单元收入"}) as resp:
         events = parse_events(list(resp.iter_lines()))
@@ -86,6 +88,7 @@ def test_chat_persists_messages(client, store, monkeypatch):
 
 def test_chat_continues_existing_session(client, store, monkeypatch):
     monkeypatch.setattr(chat, "run_answer", fake_ok)
+    monkeypatch.setattr(chat, "build_client", lambda store, settings: object())
     sid = store.create_session("已有会话")["session_id"]
 
     with client.stream("POST", "/api/chat", json={"question": "再问一次", "session_id": sid}) as resp:
@@ -96,10 +99,11 @@ def test_chat_continues_existing_session(client, store, monkeypatch):
 
 
 def test_chat_reports_error_from_pipeline(client, store, monkeypatch):
-    def fake_fail(question: str) -> QAResult:
+    def fake_fail(question: str, **kwargs) -> QAResult:
         return QAResult(question=question, sql="SELECT bad", error="no such table: bad")
 
     monkeypatch.setattr(chat, "run_answer", fake_fail)
+    monkeypatch.setattr(chat, "build_client", lambda store, settings: object())
 
     with client.stream("POST", "/api/chat", json={"question": "错误问题"}) as resp:
         events = parse_events(list(resp.iter_lines()))
