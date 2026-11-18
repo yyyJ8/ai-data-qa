@@ -1,4 +1,4 @@
-﻿"""FastAPI 应用入口。
+"""FastAPI 应用入口。
 
 已接入：健康检查、问数（SSE）、会话、配置、数据、反馈。
 """
@@ -10,6 +10,8 @@ import sqlite3
 from contextlib import asynccontextmanager, closing
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .api import chat, config, data, feedback, sessions
 from .core.settings import SCHEMA_FILE, Settings, get_settings
@@ -43,6 +45,18 @@ app.include_router(sessions.router)
 app.include_router(config.router)
 app.include_router(data.router)
 app.include_router(feedback.router)
+
+# 前端构建产物存在时，由后端同端口托管（部署形态）；开发态仍用 vite。
+# 注意：不能把静态站点挂到 "/"，否则会吞掉 /api 路由（FastAPI 新版 include_router 的
+# 匹配顺序在 mount 之后），所以只挂 /assets 并单独提供 "/"。
+_static_path = get_settings().static_path
+if (_static_path / "index.html").exists():
+    if (_static_path / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=_static_path / "assets"), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    def index_page() -> FileResponse:
+        return FileResponse(_static_path / "index.html")
 
 
 def _warehouse_status(settings: Settings) -> dict:

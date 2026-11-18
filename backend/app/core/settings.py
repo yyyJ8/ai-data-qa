@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     # 评测语料路径：相对仓库根目录
     eval_cases_path: str = Field(default="samples/eval_cases.jsonl", alias="EVAL_CASES_PATH")
+    # 前端构建产物目录（相对 backend/ 或绝对路径）；不存在则不挂载静态站点
+    static_dir: str = Field(default="../frontend/dist", alias="STATIC_DIR")
 
     # ---------- 派生属性 ----------
     @property
@@ -72,6 +74,10 @@ class Settings(BaseSettings):
         """评测语料文件：校对通过后回灌到这里（相对仓库根目录）。"""
         path = Path(self.eval_cases_path)
         return path if path.is_absolute() else (BACKEND_DIR.parent / path).resolve()
+
+    @property
+    def static_path(self) -> Path:
+        return self._resolve(self.static_dir)
 
 
 @lru_cache(maxsize=1)
