@@ -40,3 +40,6 @@ Thumbs.db
 # ---------- 本地数据库与评测报告 ----------
 backend/data/
 samples/reports/
+
+# ---------- 前端构建缓存 ----------
+*.tsbuildinfo
