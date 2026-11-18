@@ -5,9 +5,27 @@ import { ChartPanel } from './ChartPanel'
 import { DataTable } from './DataTable'
 import { StageList } from './StageList'
 
-export function AnswerCard({ draft }: { draft: AssistantDraft }) {
+export function AnswerCard({
+  draft,
+  onAsk,
+}: {
+  draft: AssistantDraft
+  onAsk?: (question: string) => void
+}) {
   const [feedbackSent, setFeedbackSent] = useState(false)
+  const [copied, setCopied] = useState(false)
   const showChart = draft.chart && draft.chart !== 'table' && draft.table && draft.chart !== 'none'
+
+  const copyInsight = async () => {
+    if (!draft.insight) return
+    try {
+      await navigator.clipboard.writeText(draft.insight)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('复制失败', error)
+    }
+  }
 
   const submitFeedback = async () => {
     if (!draft.question || feedbackSent) return
@@ -60,6 +78,17 @@ export function AnswerCard({ draft }: { draft: AssistantDraft }) {
         </section>
       )}
 
+      {draft.followups && draft.followups.length > 0 && (
+        <div className="followups">
+          <span className="muted small">继续问：</span>
+          {draft.followups.map((question) => (
+            <button key={question} className="chip" type="button" onClick={() => onAsk?.(question)}>
+              {question}
+            </button>
+          ))}
+        </div>
+      )}
+
       {draft.meta?.sql && (
         <details className="sql-block">
           <summary>查看 SQL{draft.meta.elapsed_ms ? ` · ${draft.meta.elapsed_ms} ms` : ''}</summary>
@@ -72,11 +101,21 @@ export function AnswerCard({ draft }: { draft: AssistantDraft }) {
           <span>
             tokens: {draft.meta.prompt_tokens ?? 0} / {draft.meta.completion_tokens ?? 0}
           </span>
-          {draft.question && (
-            <button className="link" type="button" onClick={submitFeedback} disabled={feedbackSent}>
-              {feedbackSent ? '已提交反馈' : '反馈数据有误'}
+          <div className="answer-actions">
+            <button className="link" type="button" onClick={copyInsight} disabled={!draft.insight}>
+              {copied ? '已复制' : '复制结论'}
             </button>
-          )}
+            {draft.question && onAsk && (
+              <button className="link" type="button" onClick={() => onAsk(draft.question!)}>
+                再问一次
+              </button>
+            )}
+            {draft.question && (
+              <button className="link" type="button" onClick={submitFeedback} disabled={feedbackSent}>
+                {feedbackSent ? '已提交反馈' : '反馈数据有误'}
+              </button>
+            )}
+          </div>
         </footer>
       ) : null}
     </article>

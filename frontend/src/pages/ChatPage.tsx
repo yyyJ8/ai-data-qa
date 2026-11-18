@@ -112,6 +112,11 @@ export function ChatPage() {
                 draft.insight = String(data.text)
               })
               break
+            case 'followups':
+              updateDraft((draft) => {
+                draft.followups = (data.items as string[]) ?? []
+              })
+              break
             case 'error':
               updateDraft((draft) => {
                 draft.error = String(data.message)
@@ -180,6 +185,7 @@ export function ChatPage() {
               insight: message.content,
               chart: message.chart ?? undefined,
               table: columns && rows ? { columns, rows } : undefined,
+              followups: (meta.followups as string[] | undefined) ?? [],
               meta: {
                 sql: message.sql ?? undefined,
                 elapsed_ms: Number(meta.elapsed_ms ?? 0),
@@ -196,6 +202,38 @@ export function ChatPage() {
   const greeting = config?.greeting ?? true
   const questions = config?.greetingQuestions ?? []
 
+  const togglePin = async (session: Session) => {
+    try {
+      await apiClient.patch(`/api/sessions/${session.session_id}`, { pinned: !session.pinned })
+      await refreshSessions()
+    } catch (error) {
+      console.error('置顶失败', error)
+    }
+  }
+
+  const renameSession = async (session: Session) => {
+    const title = window.prompt('重命名会话', session.title)?.trim()
+    if (!title) return
+    try {
+      await apiClient.patch(`/api/sessions/${session.session_id}`, { title })
+      if (session.session_id === sessionId) setTitle(title)
+      await refreshSessions()
+    } catch (error) {
+      console.error('重命名失败', error)
+    }
+  }
+
+  const removeSession = async (session: Session) => {
+    if (!window.confirm(`删除会话「${session.title}」？该操作不可恢复。`)) return
+    try {
+      await apiClient.delete(`/api/sessions/${session.session_id}`)
+      if (session.session_id === sessionId) newChat()
+      await refreshSessions()
+    } catch (error) {
+      console.error('删除失败', error)
+    }
+  }
+
   return (
     <div className="chat-layout">
       <aside className="session-bar">
@@ -208,15 +246,33 @@ export function ChatPage() {
         <div className="session-list">
           {sessions.length === 0 && <p className="muted small">还没有会话</p>}
           {sessions.map((session) => (
-            <button
+            <div
               key={session.session_id}
-              type="button"
               className={`session-item${session.session_id === sessionId ? ' active' : ''}`}
-              onClick={() => openSession(session.session_id)}
             >
-              <span className="session-title">{session.title}</span>
-              <span className="muted small">{session.message_count} 条</span>
-            </button>
+              <button
+                type="button"
+                className="session-main"
+                onClick={() => openSession(session.session_id)}
+              >
+                <span className="session-title">
+                  {session.pinned ? '📌 ' : ''}
+                  {session.title}
+                </span>
+                <span className="muted small">{session.message_count} 条</span>
+              </button>
+              <div className="session-actions">
+                <button type="button" title={session.pinned ? '取消置顶' : '置顶'} onClick={() => togglePin(session)}>
+                  {session.pinned ? '★' : '☆'}
+                </button>
+                <button type="button" title="重命名" onClick={() => renameSession(session)}>
+                  ✎
+                </button>
+                <button type="button" title="删除" onClick={() => removeSession(session)}>
+                  ✕
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </aside>
@@ -255,7 +311,7 @@ export function ChatPage() {
                 {item.text}
               </div>
             ) : (
-              <AnswerCard key={index} draft={item.draft} />
+              <AnswerCard key={index} draft={item.draft} onAsk={send} />
             ),
           )}
           <div ref={bottomRef} />

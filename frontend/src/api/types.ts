@@ -32,6 +32,7 @@ export interface AssistantDraft {
   table?: TableData
   chart?: string
   insight?: string
+  followups?: string[]
   meta?: DraftMeta
   error?: string
   streaming: boolean
