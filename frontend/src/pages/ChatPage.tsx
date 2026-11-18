@@ -166,24 +166,27 @@ export function ChatPage() {
       setSessionId(detail.session_id)
       setTitle(detail.title)
       setItems(
-        detail.messages.map((message, index) =>
-          message.role === 'user'
-            ? { kind: 'user', text: message.content }
-            : {
-                kind: 'assistant',
-                draft: {
-                  question: detail.messages[index - 1]?.content,
-                  stages: [],
-                  streaming: false,
-                  insight: message.content,
-                  chart: message.chart ?? undefined,
-                  meta: {
-                    sql: message.sql ?? undefined,
-                    elapsed_ms: Number(message.meta?.elapsed_ms ?? 0),
-                  },
-                },
+        detail.messages.map((message, index) => {
+          if (message.role === 'user') return { kind: 'user', text: message.content }
+          const meta = message.meta ?? {}
+          const columns = meta.columns as string[] | undefined
+          const rows = meta.rows_data as (string | number | null)[][] | undefined
+          return {
+            kind: 'assistant',
+            draft: {
+              question: detail.messages[index - 1]?.content,
+              stages: [],
+              streaming: false,
+              insight: message.content,
+              chart: message.chart ?? undefined,
+              table: columns && rows ? { columns, rows } : undefined,
+              meta: {
+                sql: message.sql ?? undefined,
+                elapsed_ms: Number(meta.elapsed_ms ?? 0),
               },
-        ),
+            },
+          }
+        }),
       )
     } catch (error) {
       console.error('加载会话详情失败', error)
