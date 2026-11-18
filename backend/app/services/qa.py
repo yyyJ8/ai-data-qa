@@ -99,6 +99,13 @@ def answer(
             result.error = None
             result.columns = query.columns
             result.rows = [list(row) for row in query.rows]
+            if not result.followups:
+                # 模型偶尔漏掉 followups，用确定性模板兜底，保证前端体验稳定
+                candidates = [
+                    "按经营单元拆分看看" if "经营单元" not in result.sql else "按行业拆分看看",
+                    "2025年同期是多少？" if "2026" in result.sql else "各产品线同比如何？",
+                ]
+                result.followups = candidates[:2]
             break
 
         result.elapsed_ms = int((time.perf_counter() - start) * 1000)
