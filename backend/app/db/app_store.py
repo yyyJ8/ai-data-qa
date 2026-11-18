@@ -33,14 +33,16 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 CREATE TABLE IF NOT EXISTS feedback (
-    feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id  INTEGER,
-    question    TEXT NOT NULL,
-    sql         TEXT,
-    reason      TEXT,
-    status      TEXT NOT NULL DEFAULT '待处理',
-    remark      TEXT,
-    created_at  TEXT NOT NULL
+    feedback_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id    INTEGER,
+    question      TEXT NOT NULL,
+    sql           TEXT,
+    reason        TEXT,
+    status        TEXT NOT NULL DEFAULT '待处理',
+    remark        TEXT,
+    corrected_sql TEXT,                       -- 人工修正后的 SQL
+    promoted_at   TEXT,                       -- 写入评测集的时间
+    created_at    TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS app_config (
@@ -68,6 +70,15 @@ class AppStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as conn:
             conn.executescript(SCHEMA)
+            # 轻量迁移：老库补列（SQLite 不支持 ADD COLUMN IF NOT EXISTS）
+            for statement in (
+                "ALTER TABLE feedback ADD COLUMN corrected_sql TEXT",
+                "ALTER TABLE feedback ADD COLUMN promoted_at TEXT",
+            ):
+                try:
+                    conn.execute(statement)
+                except sqlite3.OperationalError:
+                    pass
 
     def connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.path, timeout=5)
@@ -184,7 +195,13 @@ class AppStore:
         with self.connect() as conn:
             return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
-    def update_feedback(self, feedback_id: int, status: str | None = None, remark: str | None = None) -> dict | None:
+    def update_feedback(
+        self,
+        feedback_id: int,
+        status: str | None = None,
+        remark: str | None = None,
+        corrected_sql: str | None = None,
+    ) -> dict | None:
         fields, params = [], []
         if status is not None:
             fields.append("status = ?")
@@ -192,13 +209,24 @@ class AppStore:
         if remark is not None:
             fields.append("remark = ?")
             params.append(remark)
+        if corrected_sql is not None:
+            fields.append("corrected_sql = ?")
+            params.append(corrected_sql)
         if fields:
             params.append(feedback_id)
             with self.connect() as conn:
                 conn.execute(f"UPDATE feedback SET {', '.join(fields)} WHERE feedback_id = ?", params)
+        return self.get_feedback(feedback_id)
+
+    def get_feedback(self, feedback_id: int) -> dict | None:
         with self.connect() as conn:
             row = conn.execute("SELECT * FROM feedback WHERE feedback_id = ?", (feedback_id,)).fetchone()
         return dict(row) if row else None
+
+    def mark_promoted(self, feedback_id: int) -> dict | None:
+        with self.connect() as conn:
+            conn.execute("UPDATE feedback SET promoted_at = ? WHERE feedback_id = ?", (_now(), feedback_id))
+        return self.get_feedback(feedback_id)
 
     # ---------- 配置 ----------
     def get_config(self) -> dict:

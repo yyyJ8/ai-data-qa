@@ -65,6 +65,11 @@ class Settings(BaseSettings):
         path = Path(value)
         return path if path.is_absolute() else (BACKEND_DIR / path).resolve()
 
+    @property
+    def eval_cases_file(self) -> Path:
+        """评测语料文件：校对通过后回灌到这里。"""
+        return BACKEND_DIR.parent / "samples" / "eval_cases.jsonl"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
