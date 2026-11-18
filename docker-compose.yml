@@ -14,7 +14,7 @@ services:
       DB_PATH: data/warehouse.db
       APP_DB_PATH: data/app.db
       STATIC_DIR: /app/static
-      EVAL_CASES_PATH: samples/eval_cases.jsonl
+      EVAL_CASES_PATH: /app/samples/eval_cases.jsonl
     volumes:
       - ./storage:/app/data
       - ./samples:/app/samples
