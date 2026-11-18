@@ -47,6 +47,8 @@ class Settings(BaseSettings):
 
     # ---------- 应用 ----------
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    # 评测语料路径：相对仓库根目录
+    eval_cases_path: str = Field(default="samples/eval_cases.jsonl", alias="EVAL_CASES_PATH")
 
     # ---------- 派生属性 ----------
     @property
@@ -67,8 +69,9 @@ class Settings(BaseSettings):
 
     @property
     def eval_cases_file(self) -> Path:
-        """评测语料文件：校对通过后回灌到这里。"""
-        return BACKEND_DIR.parent / "samples" / "eval_cases.jsonl"
+        """评测语料文件：校对通过后回灌到这里（相对仓库根目录）。"""
+        path = Path(self.eval_cases_path)
+        return path if path.is_absolute() else (BACKEND_DIR.parent / path).resolve()
 
 
 @lru_cache(maxsize=1)
