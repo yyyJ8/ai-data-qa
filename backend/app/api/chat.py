@@ -47,6 +47,12 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
         session = store.create_session(question[:20] or "新对话")
     session_id = session["session_id"]
 
+    # 取历史（不含本条），用于消解"那同比呢""换成浙江"这类追问
+    history = [
+        {"role": m["role"], "content": m["content"]}
+        for m in store.list_messages(session_id)[-4:]
+    ]
+
     store.add_message(session_id, "user", question)
     tables = recall(question)
 
@@ -57,7 +63,7 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
         try:
             client = build_client(store, get_settings())
             result: QAResult = await anyio.to_thread.run_sync(
-                functools.partial(run_answer, question, client=client)
+                functools.partial(run_answer, question, history=history, client=client)
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("问数失败")
@@ -80,6 +86,8 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
         yield _sse("chart", {"type": result.chart})
         if result.explanation:
             yield _sse("insight", {"text": result.explanation})
+        if result.followups:
+            yield _sse("followups", {"items": result.followups})
 
         store.add_message(
             session_id,
@@ -97,6 +105,7 @@ def chat(payload: ChatRequest, store: AppStore = Depends(get_store)) -> Streamin
                 # 存结果集，重开会话时能还原表格与图表（最多 100 行）
                 "columns": result.columns,
                 "rows_data": result.rows[:100],
+                "followups": result.followups,
             },
         )
         yield _sse(

@@ -47,6 +47,7 @@ def fake_ok(question: str, **kwargs) -> QAResult:
         explanation="按单元列出",
         columns=["unit_name"],
         rows=[["北京代表处"], ["上海代表处"]],
+        followups=["各单元同比如何？", "按行业拆分看看"],
         elapsed_ms=1200,
         prompt_tokens=100,
         completion_tokens=50,
@@ -70,6 +71,28 @@ def test_chat_streams_expected_events(client, monkeypatch):
     assert len(table["rows"]) == 2
     assert dict(events)["chart"]["type"] == "bar"
     assert dict(events)["done"]["sql"].startswith("SELECT")
+    assert dict(events)["followups"]["items"][0] == "各单元同比如何？"
+
+
+def test_chat_forwards_history_for_followup(client, store, monkeypatch):
+    captured: dict = {}
+
+    def fake(question: str, **kwargs):
+        captured.update(kwargs)
+        return fake_ok(question)
+
+    monkeypatch.setattr(chat, "run_answer", fake)
+    monkeypatch.setattr(chat, "build_client", lambda store, settings: object())
+
+    sid = store.create_session("多轮")["session_id"]
+    store.add_message(sid, "user", "2026年各单元收入")
+    store.add_message(sid, "assistant", "北京最高")
+
+    with client.stream("POST", "/api/chat", json={"question": "那同比呢", "session_id": sid}) as resp:
+        list(resp.iter_lines())
+
+    history = captured.get("history") or []
+    assert [m["content"] for m in history] == ["2026年各单元收入", "北京最高"]
 
 
 def test_chat_persists_messages(client, store, monkeypatch):
