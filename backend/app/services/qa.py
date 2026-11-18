@@ -1,4 +1,4 @@
-﻿"""问数主链路：召回表 → 构造 Prompt → 生成 SQL → 校验 → 执行 → 整形。
+"""问数主链路：召回表 → 构造 Prompt → 生成 SQL → 校验 → 执行 → 整形。
 
 对外只暴露 answer()，返回结构化结果，方便接口层与评测脚本复用。
 """
@@ -23,6 +23,7 @@ class QAResult:
     sql: str | None = None
     chart: str = "none"
     explanation: str = ""
+    followups: list[str] = field(default_factory=list)
     columns: list[str] = field(default_factory=list)
     rows: list[list] = field(default_factory=list)
     elapsed_ms: int = 0
@@ -39,17 +40,19 @@ class QAResult:
 def answer(
     question: str,
     *,
+    history: list[dict] | None = None,
     settings: Settings | None = None,
     client: LLMClient | None = None,
     max_tokens: int = 3000,
     max_attempts: int = 2,
 ) -> QAResult:
+    """history: 之前的对话消息（[{role, content}]），用于多轮追问。"""
     settings = settings or get_settings()
     client = client or LLMClient(settings)
 
     tables = recall(question)
     ddl = render_ddl(tables)
-    messages = build_messages(question, ddl)
+    messages = build_messages(question, ddl, history)
     result = QAResult(question=question, tables=tables)
 
     conn = guard.connect_readonly(settings.warehouse_path)
@@ -70,6 +73,9 @@ def answer(
             result.sql = payload.get("sql")
             result.chart = payload.get("chart") or "table"
             result.explanation = payload.get("explanation") or ""
+            followups = payload.get("followups") or []
+            if isinstance(followups, list):
+                result.followups = [str(item).strip() for item in followups if str(item).strip()][:3]
 
             if not result.sql:
                 result.sql = None

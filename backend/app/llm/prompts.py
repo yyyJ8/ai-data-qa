@@ -10,7 +10,8 @@ SYSTEM_PROMPT = """你是企业销售经管数据的 text2sql 助手。根据用
 
 硬性规则：
 1. 只输出一个 JSON 对象，不要 Markdown 代码块，不要解释性文字。
-   {"sql": "...", "chart": "bar|line|pie|table|none", "explanation": "一句话说明"}
+   {"sql": "...", "chart": "bar|line|pie|table|none", "explanation": "一句话说明",
+    "followups": ["基于当前结果的追问1", "追问2", "追问3"]}
 2. 只生成单条只读 SELECT，禁止任何写操作、PRAGMA、ATTACH；不要以分号结尾。
 3. 金额单位是万元，不要做单位换算。
 4. 时间字段类型：year 是整数（写 year = 2026，不要加引号）；
@@ -22,7 +23,11 @@ SYSTEM_PROMPT = """你是企业销售经管数据的 text2sql 助手。根据用
 8. 问题无法用给定表回答时，输出 {"sql": null, "chart": "none", "explanation": "缺少什么数据"}。
 9. 不要输出 SELECT *，只选问题要求的列，不要额外派生无关指标（同比、占比类问题除外）。
 10. 排名类必须显式 ORDER BY：问"最高/最快/最大/最小"取 1 条并加 LIMIT 1；
-    问"前 N / 后 N / 最低 N"加 LIMIT N；占比要给百分比列。"""
+    问"前 N / 后 N / 最低 N"加 LIMIT N；占比要给百分比列。
+11. followups 给 2–3 条用户可能追问的短问句（不超过 20 字），必须能基于同一批表回答，
+    例如"各单元同比如何？""按行业拆分看看"；不要编号、不要与当前问题重复。
+12. 若给了「历史对话」，当前问题可能是省略式追问（如"那同比呢""换成浙江"），
+    必须结合上下文补全条件后再生成 SQL。"""
 
 
 FEW_SHOTS: list[tuple[str, str]] = [
@@ -43,7 +48,8 @@ FEW_SHOTS: list[tuple[str, str]] = [
 ]
 
 
-def build_messages(question: str, ddl: str) -> list[dict]:
+def build_messages(question: str, ddl: str, history: list[dict] | None = None) -> list[dict]:
+    """history 只取最近 4 条（2 轮），控制 token；assistant 内容截断避免撑爆上下文。"""
     examples = "\n\n".join(f"问：{q}\n答：{a}" for q, a in FEW_SHOTS)
     user = (
         f"# 可用表结构\n{ddl}\n\n"
@@ -51,10 +57,14 @@ def build_messages(question: str, ddl: str) -> list[dict]:
         f"# 用户问题\n{question}\n\n"
         "请输出 JSON。"
     )
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user},
-    ]
+    messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for turn in (history or [])[-4:]:
+        role = "assistant" if turn.get("role") == "assistant" else "user"
+        content = str(turn.get("content") or "").strip()
+        if content:
+            messages.append({"role": role, "content": content[:400]})
+    messages.append({"role": "user", "content": user})
+    return messages
 
 
 def build_retry_messages(messages: list[dict], error: str) -> list[dict]:
