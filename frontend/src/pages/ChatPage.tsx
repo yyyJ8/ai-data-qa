@@ -69,7 +69,7 @@ export function ChatPage() {
     setItems((prev) => [
       ...prev,
       { kind: 'user', text },
-      { kind: 'assistant', draft: { stages: [], streaming: true } },
+      { kind: 'assistant', draft: { question: text, stages: [], streaming: true } },
     ])
 
     const controller = new AbortController()
@@ -166,12 +166,13 @@ export function ChatPage() {
       setSessionId(detail.session_id)
       setTitle(detail.title)
       setItems(
-        detail.messages.map((message) =>
+        detail.messages.map((message, index) =>
           message.role === 'user'
             ? { kind: 'user', text: message.content }
             : {
                 kind: 'assistant',
                 draft: {
+                  question: detail.messages[index - 1]?.content,
                   stages: [],
                   streaming: false,
                   insight: message.content,

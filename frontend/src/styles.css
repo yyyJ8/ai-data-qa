@@ -563,6 +563,10 @@ textarea {
   margin-top: 10px;
   font-size: 11px;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .error-banner {
@@ -862,6 +866,11 @@ textarea {
 .tag.green {
   background: #ecfdf5;
   color: #047857;
+}
+
+.link:disabled {
+  color: var(--muted);
+  cursor: default;
 }
 
 .link {
