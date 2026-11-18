@@ -87,7 +87,7 @@ npx serve Data
 | 后端 API | ✅ | 健康 / 问数 SSE / 会话 / 配置 / 数据 / 反馈 |
 | 前端应用 | ✅ | 四个页面：问数、台账、配置、校对 |
 | 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
-| 自动化测试 | ✅ | 后端 76 条 + 前端 Playwright 6 条 |
+| 自动化测试 | ✅ | 后端 76 条 + 前端 Playwright 7 条 |
 | Linux 部署 | ⬜ | Docker Compose，单端口对外 |
 
 ## 四、目录结构
