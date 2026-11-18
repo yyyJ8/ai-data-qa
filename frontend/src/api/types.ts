@@ -48,6 +48,10 @@ export interface AppConfig {
   greetingText: string
   greetingQuestions: string[]
   suggestions: boolean
+  tts: boolean
+  stt: boolean
+  modelConfig: boolean
+  hotRecommend: boolean
   hotThreshold: number
 }
 

@@ -26,11 +26,7 @@ const NAV: NavGroup[] = [
     id: 'system',
     label: '系统管理',
     icon: '⚙',
-    children: [
-      { id: 'config', label: '应用配置' },
-      { id: 'model', label: '模型配置' },
-      { id: 'data', label: '数据台账' },
-    ],
+    children: [{ id: 'config', label: '应用配置' }],
   },
   {
     id: 'feedback-group',
@@ -77,6 +73,9 @@ export default function App() {
           <span>AI问数</span>
         </div>
         <div className="topbar-right">
+          <button className="topbar-link" type="button" onClick={() => setPage('data')} title="数据台账">
+            ▤ 台账
+          </button>
           <button className="icon-btn" type="button" title="消息通知">
             🔔
           </button>
@@ -164,7 +163,7 @@ export default function App() {
 
           <div className="content-body">
             {page === 'qa' && <ChatPage sessionOpen={sessionOpen} />}
-            {page === 'config' && <ConfigPage />}
+            {page === 'config' && <ConfigPage onNavigate={(target) => setPage(target)} />}
             {page === 'model' && <ModelPage />}
             {page === 'data' && <DataPage />}
             {page === 'feedback' && <FeedbackPage />}

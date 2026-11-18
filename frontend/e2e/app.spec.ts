@@ -24,13 +24,13 @@ test('四个页面可以互相导航', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: '你好' })).toBeVisible()
 
-  await openMenu(page, '系统管理', '数据台账')
+  await page.getByRole('button', { name: /台账/ }).click()
   await expect(page.getByRole('heading', { name: '数据台账' })).toBeVisible()
 
   await openMenu(page, '系统管理', '应用配置')
   await expect(page.getByRole('heading', { name: '应用配置' })).toBeVisible()
 
-  await openMenu(page, '系统管理', '模型配置')
+  await page.locator('.config-card', { hasText: '模型配置' }).getByTitle('设置').click()
   await expect(page.getByRole('heading', { name: '模型配置' })).toBeVisible()
 
   await openMenu(page, '反馈管理', '回复校对')
@@ -59,7 +59,7 @@ test('台账分页可用且导出链接正确', async ({ page, request }) => {
   expect(first.total).toBe(21)
 
   await page.goto('/')
-  await openMenu(page, '系统管理', '数据台账')
+  await page.getByRole('button', { name: /台账/ }).click()
   await expect(page.getByText('共 21 行')).toBeVisible()
 
   await page.getByRole('button', { name: '下一页' }).click()
@@ -69,16 +69,15 @@ test('台账分页可用且导出链接正确', async ({ page, request }) => {
   await expect(exportLink).toHaveAttribute('href', /\/api\/data\/dim_unit\/export/)
 })
 
-test('应用配置保存后给出提示', async ({ page }) => {
+test('应用配置开关即时保存并提示', async ({ page }) => {
   await page.goto('/')
   await openMenu(page, '系统管理', '应用配置')
 
-  const toggle = page.locator('.switch').first()
+  const toggle = page.locator('.config-card .switch').first()
   await toggle.click()
+  await expect(page.locator('.toast')).toContainText('已保存')
   await toggle.click()
-
-  await page.getByRole('button', { name: '保存应用配置' }).click()
-  await expect(page.locator('.toast')).toContainText('应用配置已保存')
+  await expect(page.locator('.config-grid .config-card')).toHaveCount(6)
 })
 
 test('重开会话能还原表格与图表', async ({ page, request }) => {

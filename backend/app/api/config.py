@@ -22,6 +22,10 @@ APP_DEFAULTS: dict = {
     "greetingText": "欢迎使用智能AI问数，您可以向我咨询经营数据、报表分析相关问题。",
     "greetingQuestions": ["2026年各经营单元收入排名", "各产品线收入占比", "本月回款情况"],
     "suggestions": True,
+    "tts": False,
+    "stt": False,
+    "modelConfig": True,
+    "hotRecommend": True,
     "hotThreshold": 3,
 }
 
@@ -31,6 +35,10 @@ class AppConfigUpdate(BaseModel):
     greetingText: str | None = Field(default=None, max_length=200)
     greetingQuestions: list[str] | None = None
     suggestions: bool | None = None
+    tts: bool | None = None
+    stt: bool | None = None
+    modelConfig: bool | None = None
+    hotRecommend: bool | None = None
     hotThreshold: int | None = Field(default=None, ge=1, le=100)
 
 
