@@ -16,7 +16,7 @@ interface SessionDetail extends Session {
   messages: StoredMessage[]
 }
 
-export function ChatPage() {
+export function ChatPage({ sessionOpen }: { sessionOpen: boolean }) {
   const [sessions, setSessions] = useState<Session[]>([])
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [items, setItems] = useState<ChatItem[]>([])
@@ -24,6 +24,7 @@ export function ChatPage() {
   const [title, setTitle] = useState('AI 智能问数')
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
@@ -46,6 +47,10 @@ export function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [items])
+
+  useEffect(() => {
+    document.title = title ? `${title} · AI问数` : 'AI问数'
+  }, [title])
 
   const updateDraft = (mutate: (draft: AssistantDraft) => void) => {
     setItems((prev) => {
@@ -236,7 +241,7 @@ export function ChatPage() {
 
   return (
     <div className="chat-layout">
-      <aside className="session-bar">
+      <aside className={sessionOpen ? 'session-bar' : 'session-bar hidden'}>
         <div className="session-head">
           <span>近 30 天记录</span>
           <button className="ghost" onClick={newChat} type="button" title="开启新对话">
@@ -278,28 +283,28 @@ export function ChatPage() {
       </aside>
 
       <main className="chat-main">
-        <header className="chat-head">
-          <h2>{title}</h2>
-          <span className="muted small">deepseek-flash · text2sql</span>
-        </header>
 
         <div className="messages">
           {items.length === 0 && (
             <div className="welcome">
-              <h1>你好，我是 AI 问数助手</h1>
-              {greeting && <p className="muted">{config?.greetingText}</p>}
+              <h1>你好</h1>
+              <h2>我是 AI 问数助手</h2>
+              {greeting && <p className="welcome-desc">{config?.greetingText}</p>}
               {greeting && questions.length > 0 && (
-                <div className="quick-grid">
-                  {questions.map((question) => (
-                    <button
-                      key={question}
-                      type="button"
-                      className="quick"
-                      onClick={() => send(question)}
-                    >
-                      {question}
-                    </button>
-                  ))}
+                <div className="quick-block">
+                  <p className="quick-title">你可以这么问我</p>
+                  <div className="quick-grid">
+                    {questions.map((question) => (
+                      <button
+                        key={question}
+                        type="button"
+                        className="quick"
+                        onClick={() => send(question)}
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -318,27 +323,62 @@ export function ChatPage() {
         </div>
 
         <div className="composer">
-          <textarea
-            value={input}
-            placeholder="请写下您的想法…（Enter 发送，Shift+Enter 换行）"
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault()
-                send(input)
-              }
-            }}
-            rows={2}
-          />
-          {busy ? (
-            <button className="send stop" onClick={stop} type="button">
-              停止
-            </button>
-          ) : (
-            <button className="send" onClick={() => send(input)} disabled={!input.trim()} type="button">
-              发送
-            </button>
+          {quickOpen && questions.length > 0 && (
+            <div className="quick-pop">
+              {questions.map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  onClick={() => {
+                    setQuickOpen(false)
+                    send(question)
+                  }}
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
           )}
+          <div className="composer-pill">
+            <button
+              className="pill-btn"
+              type="button"
+              title="快捷提问"
+              onClick={() => setQuickOpen(!quickOpen)}
+            >
+              ⚡
+            </button>
+            <textarea
+              value={input}
+              placeholder="请写下您的想法…"
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  send(input)
+                }
+              }}
+              rows={1}
+            />
+            <button className="pill-btn" type="button" title="语音输入未启用" disabled>
+              🎤
+            </button>
+            {busy ? (
+              <button className="send-round stop" onClick={stop} type="button" title="停止">
+                ■
+              </button>
+            ) : (
+              <button
+                className="send-round"
+                onClick={() => send(input)}
+                disabled={!input.trim()}
+                type="button"
+                title="发送"
+              >
+                →
+              </button>
+            )}
+          </div>
         </div>
       </main>
     </div>
