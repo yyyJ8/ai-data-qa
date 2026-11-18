@@ -235,3 +235,21 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"2026年收入前3的经营单元"}'
 ```
+
+### 7.7 Docker 部署
+
+```powershell
+cp backend/.env.example backend/.env   # 填 LLM_API_KEY
+docker compose up -d --build
+```
+
+| 项 | 说明 |
+|---|---|
+| 镜像 | 多阶段：`node:20-slim` 构建前端 → `python:3.12-slim` 运行，产物 260 MB |
+| 端口 | 单端口 8000：`/` 与 `/assets` 由 FastAPI 托管，`/api`、`/docs` 同端口 |
+| 数据卷 | `./storage` → `/app/data`（业务库 + 元数据库）；`./samples` 供回灌写入 |
+| 初始化 | 容器启动执行 `python -m app.db.init_db`，幂等；空目录自动建库灌 6,433 行 |
+| 健康检查 | `HEALTHCHECK` 轮询 `/api/health`，compose 显示 `healthy` 才可用 |
+| 冷启动 | 镜像已构建时，`down` 后清空 `storage` 再 `up -d` 实测 **8 秒**进入 healthy |
+
+> `.env` 通过 `env_file` 注入，不进入镜像（`.dockerignore` 已排除）。
