@@ -1,20 +1,39 @@
-﻿import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const E2E_CASES = path.resolve(process.cwd(), 'e2e-cases.jsonl')
 
+/** 展开分组并点击二级菜单（分组默认展开时直接点）。 */
+async function openMenu(page: Page, group: string, item: string) {
+  const target = page.getByRole('button', { name: item, exact: true })
+  if (!(await target.isVisible())) {
+    await page.getByRole('button', { name: new RegExp(group) }).click()
+  }
+  await target.click()
+}
+
+async function ask(page: Page, question: string) {
+  const box = page.getByPlaceholder(/请写下您的想法/)
+  await box.fill(question)
+  await page.locator('.send-round').click()
+}
+
 test('四个页面可以互相导航', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: '你好，我是 AI 问数助手' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '你好' })).toBeVisible()
 
-  await page.getByRole('button', { name: /数据台账/ }).click()
+  await openMenu(page, '系统管理', '数据台账')
   await expect(page.getByRole('heading', { name: '数据台账' })).toBeVisible()
 
-  await page.getByRole('button', { name: /应用配置/ }).click()
+  await openMenu(page, '系统管理', '应用配置')
   await expect(page.getByRole('heading', { name: '应用配置' })).toBeVisible()
 
-  await page.getByRole('button', { name: /回复校对/ }).click()
+  await openMenu(page, '系统管理', '模型配置')
+  await expect(page.getByRole('heading', { name: '模型配置' })).toBeVisible()
+
+  await openMenu(page, '反馈管理', '回复校对')
   await expect(page.getByRole('heading', { name: '回复校对' })).toBeVisible()
 })
 
@@ -23,8 +42,7 @@ test('问数能流式返回表格与图表', async ({ page, request }) => {
   test.skip(!health.llm?.configured, '未配置模型 Key，跳过真实问数')
 
   await page.goto('/')
-  await page.getByPlaceholder(/请写下您的想法/).fill('2026年收入前3的经营单元')
-  await page.getByRole('button', { name: '发送' }).click()
+  await ask(page, '2026年收入前3的经营单元')
 
   await expect(page.locator('.answer-card')).toBeVisible()
   await expect(page.locator('.answer-card')).toContainText('数据表格', { timeout: 50_000 })
@@ -33,6 +51,7 @@ test('问数能流式返回表格与图表', async ({ page, request }) => {
     .toBeGreaterThan(0)
   await expect(page.locator('.answer-card .chart canvas')).toBeVisible()
   await expect(page.locator('.answer-card')).toContainText('结论')
+  await expect(page.locator('.followups .chip').first()).toBeVisible()
 })
 
 test('台账分页可用且导出链接正确', async ({ page, request }) => {
@@ -40,7 +59,7 @@ test('台账分页可用且导出链接正确', async ({ page, request }) => {
   expect(first.total).toBe(21)
 
   await page.goto('/')
-  await page.getByRole('button', { name: /数据台账/ }).click()
+  await openMenu(page, '系统管理', '数据台账')
   await expect(page.getByText('共 21 行')).toBeVisible()
 
   await page.getByRole('button', { name: '下一页' }).click()
@@ -52,7 +71,7 @@ test('台账分页可用且导出链接正确', async ({ page, request }) => {
 
 test('应用配置保存后给出提示', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /应用配置/ }).click()
+  await openMenu(page, '系统管理', '应用配置')
 
   const toggle = page.locator('.switch').first()
   await toggle.click()
@@ -67,11 +86,11 @@ test('重开会话能还原表格与图表', async ({ page, request }) => {
   test.skip(!health.llm?.configured, '未配置模型 Key，跳过真实问数')
 
   await page.goto('/')
-  await page.getByPlaceholder(/请写下您的想法/).fill('2026年各产品线收入占比')
-  await page.getByRole('button', { name: '发送' }).click()
+  await ask(page, '2026年各产品线收入占比')
   await expect(page.locator('.answer-card .chart canvas')).toBeVisible({ timeout: 50_000 })
 
   await page.reload()
+  await page.getByTitle('展开/收起会话列表').click()
   await page.locator('.session-item .session-main').first().click()
 
   await expect(page.locator('.answer-card .data-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
@@ -84,7 +103,7 @@ test('反馈提交后会出现在校对列表', async ({ page, request }) => {
   expect(created.status()).toBe(201)
 
   await page.goto('/')
-  await page.getByRole('button', { name: /回复校对/ }).click()
+  await openMenu(page, '反馈管理', '回复校对')
   await expect(page.getByText(question)).toBeVisible()
 })
 
@@ -99,11 +118,8 @@ test('校对填写修正 SQL 后可回灌评测集', async ({ page, request }) =
   })
 
   await page.goto('/')
-  await page.getByRole('button', { name: /回复校对/ }).click()
-  await page
-    .locator('tr', { hasText: question })
-    .getByRole('button', { name: '处理' })
-    .click()
+  await openMenu(page, '反馈管理', '回复校对')
+  await page.locator('tr', { hasText: question }).getByRole('button', { name: '处理' }).click()
 
   await expect(page.locator('.modal')).toBeVisible()
   await page.getByRole('button', { name: '写入评测集' }).click()
