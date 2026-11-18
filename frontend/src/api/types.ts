@@ -56,3 +56,32 @@ export interface PagedTable {
   page: number
   page_size: number
 }
+
+export interface ModelConfig {
+  base_url: string
+  model: string
+  thinking: boolean
+  reasoning_effort: 'low' | 'medium' | 'high'
+  api_key_masked: string
+  configured: boolean
+}
+
+export interface ModelTestResult {
+  ok: boolean
+  model?: string
+  latency_ms?: number
+  total_ms?: number
+  reply?: string
+  error?: string
+}
+
+export interface FeedbackItem {
+  feedback_id: number
+  session_id: number | null
+  question: string
+  sql: string | null
+  reason: string | null
+  status: '待处理' | '已处理'
+  remark: string | null
+  created_at: string
+}
