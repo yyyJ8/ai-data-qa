@@ -1,4 +1,4 @@
-﻿"""问数 SSE 接口测试：用假 answer 避免真实调用模型。"""
+"""问数 SSE 接口测试：用假 answer 避免真实调用模型。"""
 
 import json
 
@@ -84,6 +84,9 @@ def test_chat_persists_messages(client, store, monkeypatch):
     assert [m["role"] for m in messages] == ["user", "assistant"]
     assert messages[1]["sql"].startswith("SELECT")
     assert messages[1]["meta"]["elapsed_ms"] == 1200
+    # 结果集落库，供重开会话时还原表格
+    assert messages[1]["meta"]["columns"] == ["unit_name"]
+    assert messages[1]["meta"]["rows_data"] == [["北京代表处"], ["上海代表处"]]
 
 
 def test_chat_continues_existing_session(client, store, monkeypatch):
