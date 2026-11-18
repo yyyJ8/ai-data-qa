@@ -85,9 +85,9 @@ npx serve Data
 | 原型问题诊断 | ✅ | [docs/原型诊断.md](docs/原型诊断.md) |
 | 数据字典 / 口径 | ✅ | [docs/数据字典草稿.md](docs/数据字典草稿.md) |
 | 后端 API | ✅ | 健康 / 问数 SSE / 会话 / 配置 / 数据 / 反馈 |
-| 前端应用 | ⬜ | React + TypeScript + Vite |
+| 前端应用 | 🚧 | 问数页、数据台账页可用；配置页与校对页待做 |
 | 评测集（问句-标准 SQL-结果） | ✅ | `samples/eval_cases.jsonl` 30 条，`samples/check_cases.py` 全部可执行 |
-| 自动化测试 | ⬜ | 接口 + 端到端 |
+| 自动化测试 | 🚧 | 后端 70 条；前端端到端待补 |
 | Linux 部署 | ⬜ | Docker Compose，单端口对外 |
 
 ## 四、目录结构
@@ -180,10 +180,13 @@ cd backend
 cd .. && python samples/check_cases.py                                     # 评测语料可执行性
 ```
 
-前端（待创建）：
+前端（开发态，需先启动后端）：
 
-```bash
-cd frontend && pnpm install && pnpm dev   # 开发态代理 /api → 8000
+```powershell
+cd frontend
+pnpm install
+pnpm dev        # http://127.0.0.1:5173 ，/api 代理到 8000
+pnpm build      # 产出 dist/
 ```
 
 ### 7.4 环境变量（规划）
