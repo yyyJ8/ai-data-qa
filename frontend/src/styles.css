@@ -1417,3 +1417,69 @@ textarea {
   background: var(--bg);
   color: var(--primary);
 }
+
+
+/* ---------- 视觉对齐：回答卡片 ---------- */
+.aa-wrap {
+  margin-bottom: 12px;
+}
+
+.aa-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.aa-bar-icon {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.aa-bar-arrow {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.aa-bar-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.aa-wrap .stages {
+  margin-top: 10px;
+}
+
+.discovery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.discovery li {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.discovery .k {
+  width: 76px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.discovery .v {
+  color: var(--text-body);
+  word-break: break-word;
+}

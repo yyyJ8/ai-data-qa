@@ -28,6 +28,7 @@ export interface DraftMeta {
 
 export interface AssistantDraft {
   question?: string
+  tables?: string[]
   stages: Stage[]
   table?: TableData
   chart?: string

@@ -91,13 +91,13 @@ export function ChatPage({ sessionOpen }: { sessionOpen: boolean }) {
               setTitle(String(data.title))
               break
             case 'stage':
-              updateDraft((draft) =>
-                draft.stages.push({
-                  step: Number(data.step),
-                  title: String(data.title),
-                  detail: String(data.detail),
-                }),
-              )
+              updateDraft((draft) => {
+                const step = Number(data.step)
+                draft.stages.push({ step, title: String(data.title), detail: String(data.detail) })
+                if (step === 1) {
+                  draft.tables = String(data.detail).split('、').filter(Boolean)
+                }
+              })
               break
             case 'table':
               updateDraft((draft) => {
