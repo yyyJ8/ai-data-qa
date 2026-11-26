@@ -113,6 +113,8 @@ def export_table(
 
     workbook = Workbook()
     sheet = workbook.active
+    if sheet is None:  # openpyxl 新建工作簿必有默认表，这里只为类型收窄
+        raise HTTPException(status_code=500, detail="无法创建工作表")
     sheet.title = table[:30]
     sheet.append(columns)
     for row in rows:
