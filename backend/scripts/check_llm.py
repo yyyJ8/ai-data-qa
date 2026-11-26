@@ -30,7 +30,7 @@ PLAIN_PROMPT = "只回复两个字：可用"
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        getattr(sys.stdout, "reconfigure")(encoding="utf-8")
 
     settings = get_settings()
     parser = argparse.ArgumentParser(description="LLM 连通性检查")

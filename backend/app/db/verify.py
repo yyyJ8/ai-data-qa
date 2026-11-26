@@ -135,7 +135,7 @@ def check_deterministic(conn: sqlite3.Connection, db_path: Path) -> tuple[bool, 
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        getattr(sys.stdout, "reconfigure")(encoding="utf-8")
 
     parser = argparse.ArgumentParser(description="业务库自检")
     parser.add_argument("--db", default=str(DEFAULT_DB))

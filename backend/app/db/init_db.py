@@ -52,7 +52,7 @@ def table_counts(conn: sqlite3.Connection) -> dict[str, int]:
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        getattr(sys.stdout, "reconfigure")(encoding="utf-8")
 
     parser = argparse.ArgumentParser(description="初始化业务库（建表 + 种子数据）")
     parser.add_argument("--db", default=str(DEFAULT_DB), help="数据库文件路径")

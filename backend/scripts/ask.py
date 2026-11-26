@@ -36,7 +36,7 @@ def render_table(columns: list[str], rows: list[list], limit: int = 20) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        getattr(sys.stdout, "reconfigure")(encoding="utf-8")
 
     parser = argparse.ArgumentParser(description="问数命令行")
     parser.add_argument("question")
